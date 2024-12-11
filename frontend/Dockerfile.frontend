@@ -1,0 +1,26 @@
+# 使用官方的 Node.js 镜像作为基础镜像
+FROM node:20
+
+# 设置工作目录
+WORKDIR /app
+
+# 将本地的 package.json 和 package-lock.json 文件复制到容器中
+COPY package*.json ./
+
+# 安装依赖
+RUN npm install
+
+# 复制所有前端源代码到容器中
+COPY . .
+
+# 执行代码格式化命令
+RUN npm run format
+
+# 构建前端应用
+RUN npm run build
+
+# 暴露前端服务端口
+EXPOSE 5173
+
+# 启动前端服务
+CMD ["npm", "run", "dev"]
