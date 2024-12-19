@@ -1,2 +1,5 @@
 uvicorn[standard]
 fastapi
+sqlalchemy==2.0.10
+pydantic==1.10.7
+mysql-connector-python
