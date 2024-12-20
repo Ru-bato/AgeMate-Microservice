@@ -184,12 +184,13 @@ services:
       dockerfile: Dockerfile.backend
     image: muyongzhen/agetutor:user-manager-backend-latest
     environment:
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=${USER_MANAGER_MYSQL_URL}
       - RABBITMQ_URL=${RABBITMQ_URL}
     networks:
       - app-network
     depends_on:
       - rabbitmq
+      - user-manager-mysql
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://user-manager-backend:8005/health || exit 1"]
       interval: 30s
@@ -200,6 +201,18 @@ services:
       - "traefik.http.routers.user-manager-backend.rule=PathPrefix(`/user-manager`)"
       - "traefik.http.services.user-manager-backend.loadbalancer.server.port=8005"
     restart: on-failure
+
+  # 微服务user-manager MySQL数据库
+  user-manager-mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: age123456
+      MYSQL_DATABASE: user_manager_mysql
+    volumes:
+      - user_manager_mysql_data:/var/lib/mysql
+    networks:
+      - app-network
+    restart: always
 
   # 微服务weather-entertainment 后端
   weather-entertainment-backend:
@@ -230,5 +243,21 @@ networks:
     driver: bridge
 
 volumes:
-  rabbitmq_data: {}
-  prometheus_data: {}
+  rabbitmq_data:
+    driver: local
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   device: /data/rabbitmq_data
+  prometheus_data:
+    driver: local
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   device: /data/prometheus_data
+  user_manager_mysql_data:
+    driver: local
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   device: /data/mysql_data

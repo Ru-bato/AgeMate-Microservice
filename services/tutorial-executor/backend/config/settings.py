@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     # Project infomation
     PROJECT_NAME: str = "Tuturial Executor"
     API_VERSION: str = "1.0"
+
+    # Config path
+    CONFIG_PATH: str = "config/demo_mode.toml"
     
     # Application settings
     APP_NAME: str = "My Awesome App"
@@ -113,6 +116,8 @@ class Settings(BaseSettings):
 
     # Testing settings
     TEST_MONGODB_URI: AnyUrl = "mongodb://localhost:27017/testdb"
+
+    RABBITMQ_URL: str = "amqp://guest:guest@rabbitmq:5672/"
 
     class Config:
         env_file = ".env"

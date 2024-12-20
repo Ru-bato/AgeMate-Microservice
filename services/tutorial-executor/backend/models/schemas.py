@@ -123,6 +123,16 @@ class TokenData(BaseModel):
 class ErrorResponse(BaseModel):
     detail: str
 
+class TaskRequest(BaseModel):
+    model: str
+    task: str
+    website: str
+
+class TaskStatus(BaseModel):
+    id: str
+    status: str
+    result: Optional[str] = None
+    
 # Example usage of schemas (for testing purposes)
 if __name__ == '__main__':
     log_entry = LogEntry(
