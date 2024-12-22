@@ -4,10 +4,11 @@
 # Description:
 #   the backend program of the log-manager
 # Solved:
-# Unsolved:
 #   1.userInfo Struct
 #   2.login method
 #   3.regist method
+# Unsolved:
+#   test connect
 #   else
 
 import os
@@ -19,8 +20,8 @@ from pydantic import BaseModel, constr
 from contextlib import contextmanager
 from typing import Union, Dict
 
-# MySQL Database connection setup
-DATABASE_URL = os.getenv("DATABASE_URL", "mysql://user:password@localhost:3306/db")
+# MySQL Database connection setup using mysqlclient (MySQLdb)
+DATABASE_URL = os.getenv("DATABASE_URL", "mysql+mysqldb://agetutor:age123456@user-manager-mysql:3306/user_manager_mysql")
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -40,7 +41,6 @@ class User(Base):
 # Create the database tables
 Base.metadata.create_all(bind=engine)
 
-# Pydantic schema for user
 # Pydantic schema for user
 class UserCreate(BaseModel):
     username: str
