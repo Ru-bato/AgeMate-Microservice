@@ -1,0 +1,27 @@
+数据设计:
+username	VARCHAR(10)                     	用户名，非空（前端）
+userID		INTERGER					        每次增加一个数据，标签userID自增1，由数据库自动实现
+password	VARCHAR(20)							4-20字符（字母、数字字符），非空（前端）
+phone_number	CHAR(10)						11位（数字）
+authority		TINYINT		0:管理员	1:用户   数字，代表用户类型
+
+返回格式：
+@app.get
+varchar、char、tinyint返回键值对，key是字符串，就是“password”:"1a"/"sss111"、“authority”:0/1等这些下面写的名称
+bool返回“status”：“bool”/“false”
+
+@app.post
+返回{"status":"success"/"failed"}
+
+@app.get (向数据库查询)
+api					python函数	功能
+/api/user/log			log_request	根据用户名、密码查找返回成功与否 "status":"true"/"false"
+/api/user/account		get_account	若成功自动，根据用户名、登录，查找返回userID、authority
+/api/user/findback		find_userID	根据用户名和手机号，返回userID，失败返回"userID":"unknown"
+/api/user/health        health_check检查数据库连接是否正常
+
+@app.post（向数据库增删改）
+api					python函数	功能
+/api/user/regist		    regist_request	根据输入的（格式验证交给前端）的username、password，写入数据库
+/api/user/changeAccount		change_account	根据新的（格式验证交给前端）的userID(不变)、authenrity、username、password，写入数据库
+/api/user/changePassword	change_password	根据新的（格式验证交给前端）的userID(不变)、password，写入数据库
