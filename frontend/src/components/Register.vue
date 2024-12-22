@@ -87,9 +87,7 @@
       });
   
       if (response.data.status === 'success') {
-        // 注册成功，跳转到登录页面
         alert('注册成功！');
-        router.push({ name: 'Login' });
       } else {
         // 注册失败
         errorMessage.value = '注册失败，请稍后重试！';

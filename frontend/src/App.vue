@@ -1,11 +1,11 @@
 <script setup lang="ts">
 
 import LoginRegisterView from './views/LoginRegisterView.vue';
+import HomeView from './views/HomeView.vue';
 </script>
 
 <template>
-  <LoginRegisterView></LoginRegisterView>
-
+  <<router-view></router-view>
   
 </template>
 

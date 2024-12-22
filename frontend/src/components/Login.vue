@@ -27,7 +27,8 @@ function getCurrentFormattedTime(): string {
 
 // 登录处理函数
 const handleLogin = async () => {
-  router.push({ name: 'Home', query: {userID:111 , username:'username.value', authority:1} });
+  console.log("here try to route to home")
+  router.push({ name: 'Home', params: {userID:111 , username:'username.value', authority:1} });
   return;
   try {
     // 发送登录请求，验证用户和密码
@@ -82,7 +83,7 @@ setInterval(() => {
         <div class="form-group">
           <input type="password" id="password" v-model="password" placeholder="请输入密码" required />
         </div>
-        <button type="submit" class="login-button" @click="handleLogin">登录</button>
+        <button type="submit" class="login-button">登录</button>
       </form>
       <p v-if="errorMessage" class="error-message">{{ errorMessage }}</p>
       <div class="button-container">

@@ -12,7 +12,7 @@ import Login from '@/components/Login.vue';
 import Register from '@/components/Register.vue';
 
 // 切换状态：控制当前显示登录还是注册
-const isLoginView = ref(false);
+const isLoginView = ref(true);
 
 // 切换视图函数
 const toggleView = () => {

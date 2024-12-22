@@ -13,17 +13,27 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useRoute,useRouter } from 'vue-router';
-
-
-
-const route = useRoute();
-const router = useRouter();
+import { useRouter } from 'vue-router';
 
 // 接收来自登录页面传递的 userID 和 username
-const username = ref(route.query.username);
-const userID = ref(route.query.userID);
+const props = defineProps({
+    userID: {
+        type: Number,
+        required: true
+    },
+    username: {
+        type: String,
+        required: true
+    },
+    authority: {
+        type: Number,
+        required: true
+    }
+});
 
+const router = useRouter();
+
+const userID =ref(props.data.userID)
 
 // 退出登录，跳转回登录页面
 const logout = () => {
