@@ -25,10 +25,3 @@ api					python函数	功能
 /api/user/regist		    regist_request	根据输入的（格式验证交给前端）的username、password，写入数据库
 /api/user/changeAccount		change_account	根据新的（格式验证交给前端）的userID(不变)、authenrity、username、password，写入数据库
 /api/user/changePassword	change_password	根据新的（格式验证交给前端）的userID(不变)、password，写入数据库
-
-CREATE TABLE users (
-    user_id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50),
-    age TINYINT UNSIGNED,
-    balance BIGINT UNSIGNED
-);
