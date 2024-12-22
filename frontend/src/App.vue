@@ -1,10 +1,10 @@
 <script setup lang="ts">
 
-import Login from './components/Login.vue';
+import LoginRegisterView from './views/LoginRegisterView.vue';
 </script>
 
 <template>
-  <Login></Login>
+  <LoginRegisterView></LoginRegisterView>
 
   
 </template>
