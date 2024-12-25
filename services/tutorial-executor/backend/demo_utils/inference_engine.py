@@ -30,7 +30,16 @@ from openai import (
     BadRequestError,
 )
 import base64
+
+# # 设置代理环境变量
+# os.environ["HTTP_PROXY"] = "http://host.docker.internal:7890"
+# os.environ["HTTPS_PROXY"] = "https://host.docker.internal:7890"
+
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+# 检查logger的配置
+logger.info(f"当前logger级别: {logger.getEffectiveLevel()}")
 
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
@@ -64,6 +73,11 @@ class OpenaiEngine(Engine):
             rate_limit (int, optional): Max number of requests per minute. Defaults to -1.
             model (_type_, optional): Model family. Defaults to None.
         """
+        # 在初始化时就移除 proxies 参数
+        if "proxies" in kwargs:
+            logger.info("移除 proxies 参数")
+            del kwargs["proxies"]
+        
         assert (
                 os.getenv("OPENAI_API_KEY", api_key) is not None
         ), "must pass on the api_key or set OPENAI_API_KEY in the environment"
@@ -83,6 +97,7 @@ class OpenaiEngine(Engine):
         self.next_avil_time = [0] * len(self.api_keys)
         self.current_key_idx = 0
         self.base_url = base_url
+        logger.info(f"kwargs in OpenaiEngine init: {kwargs}")
         Engine.__init__(self, **kwargs)
 
     def encode_image(self, image_path):
@@ -95,6 +110,14 @@ class OpenaiEngine(Engine):
     )
     def generate(self, prompt: list = None, max_new_tokens=4096, temperature=None, model=None, image_path=None,
                  ouput__0=None, turn_number=0, **kwargs):
+        logger.info("进入generate方法")
+        # 确保移除 proxies 参数，因为新版本的 OpenAI client 不支持这个参数
+        if "proxies" in kwargs:
+            logger.info("移除 proxies 参数")
+            del kwargs["proxies"]
+        
+        logger.info("hello")
+        logger.info(f"Filtered kwargs: {kwargs}")
         self.current_key_idx = (self.current_key_idx + 1) % len(self.api_keys)
         logger.info(f"Using API key index: {self.current_key_idx}")
         start_time = time.time()
@@ -128,7 +151,8 @@ class OpenaiEngine(Engine):
                 temperature=temperature if temperature else self.temperature,
                 **kwargs,
             )
-            logger.info(f"API response time: {time.time() - start_api_call} seconds")
+            api_call_time = time.time() - start_api_call
+            logger.info(f"大模型 API 调用用时: {api_call_time:.2f} 秒")
             # print(response1.choices)
             answer1 = [choice.message.content for choice in response1.choices][0]
 

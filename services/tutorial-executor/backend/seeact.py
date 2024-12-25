@@ -25,6 +25,7 @@ import json
 import logging
 import os
 import warnings
+import time  # 确保导入了 time 模块
 from dataclasses import dataclass
 
 import toml
@@ -40,11 +41,17 @@ from demo_utils.format_prompt import format_choices, format_ranking_input, postp
 from demo_utils.inference_engine import OpenaiEngine
 from demo_utils.ranking_model import CrossEncoder, find_topk
 from demo_utils.website_dict import website_dict
+from fastapi.logger import logger as fastapi_logger
+from models.action_record import MongoDBHandler
 
 # Remove Huggingface internal warnings
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 warnings.filterwarnings("ignore", category=UserWarning)
 
+logger_ = logging.getLogger(__name__)
+fastapi_logger.handlers = logger_.handlers
+fastapi_logger.setLevel(logging.INFO)  # Ensure logs are captured
+logger_.setLevel(logging.INFO)
 
 @dataclass
 class SessionControl:
@@ -117,6 +124,7 @@ async def page_on_open_handler(page):
 
 
 async def main(config, base_dir) -> None:
+    logger_.info(config)
     # basic settings
     is_demo = config["basic"]["is_demo"]
     ranker_path = None
@@ -153,7 +161,6 @@ async def main(config, base_dir) -> None:
 
     # openai settings
     openai_config = config["openai"]
-    print(openai_config)
     if openai_config["api_key"] == "Your_api_key":
         raise Exception(
             f"Please set your GPT API key first. (in {os.path.join(base_dir, 'config', 'demo_mode.toml')} by default)")
@@ -177,6 +184,9 @@ async def main(config, base_dir) -> None:
     trace_sources = config["playwright"]["trace"]["sources"]
 
     # Initialize Inference Engine based on OpenAI API
+    logger_.info(f"openai_config: {openai_config}")
+    logger_.info(f"openai_config type: {type(openai_config)}")
+    logger_.info(f"openai_config keys: {openai_config.keys()}")
     generation_model = OpenaiEngine(**openai_config, )
 
     # Load ranking model for prune candidate elements
@@ -191,13 +201,15 @@ async def main(config, base_dir) -> None:
     else:
         query_tasks = []
         task_dict = {}
-        task_input = await ainput(
-            f"Please input a task, and press Enter. \nOr directly press Enter to use the default task: {default_task}\nTask: ")
+        # task_input = await ainput(
+        #     f"Please input a task, and press Enter. \nOr directly press Enter to use the default task: {default_task}\nTask: ")
+        task_input = default_task
         if not task_input:
             task_input = default_task
         task_dict["confirmed_task"] = task_input
-        website_input = await ainput(
-            f"Please input the complete URL of the starting website, and press Enter. The URL must be complete (for example, including http), to ensure the browser can successfully load the webpage. \nOr directly press Enter to use the default website: {default_website}\nWebsite: ")
+        # website_input = await ainput(
+        #     f"Please input the complete URL of the starting website, and press Enter. The URL must be complete (for example, including http), to ensure the browser can successfully load the webpage. \nOr directly press Enter to use the default website: {default_website}\nWebsite: ")
+        website_input = default_website
         if not website_input:
             website_input = default_website
         task_dict["website"] = website_input
@@ -272,6 +284,7 @@ async def main(config, base_dir) -> None:
             valid_op_count = 0
 
             while not complete_flag:
+                step_start_time = time.time()
                 if dev_mode:
                     logger.info(f"Page at the start: {session_control.active_page}")
                 await session_control.active_page.bring_to_front()
@@ -426,7 +439,7 @@ async def main(config, base_dir) -> None:
                     clip_start = min(total_height - 1144, max(0, height_start - 200))
                     clip_height = min(total_height - clip_start, max(height_end - height_start + 200, 1144))
                     clip = {"x": 0, "y": clip_start, "width": total_width, "height": clip_height}
-
+                    logger.info(f"clip: {clip}")
                     if dev_mode:
                         logger.info(height_start)
                         logger.info(height_end)
@@ -454,9 +467,16 @@ async def main(config, base_dir) -> None:
                     if dev_mode:
                         for prompt_i in prompt:
                             logger.info(prompt_i)
-                    # print("prompt: ", prompt)
-                    # print("input_image_path: ", input_image_path)
+                    logger.info(f"prompt: {prompt}")
+                    logger.info(f"input_image_path: {input_image_path}")
+                    logger.info("into generate")
+                    generate_start_time = time.time()
                     output0 = generation_model.generate(prompt=prompt, image_path=input_image_path, turn_number=0)
+                    generate_end_time = time.time()
+                    logger.info(f"generate_start_time: {generate_start_time}")  
+                    logger.info(f"generate_end_time: {generate_end_time}")
+                    logger.info(f"generate_time: {generate_end_time - generate_start_time}")
+                    logger.info(f"out of generate, output0: {output0}")
                     # print("output0: ", output0)
                     terminal_width = 10
                     logger.info("-" * terminal_width)
@@ -858,6 +878,24 @@ async def main(config, base_dir) -> None:
                     await close_context.close()
 
                     complete_flag = True
+
+                step_end_time = time.time()
+                logger_.info(f"Step {time_step} 总用时: {step_end_time - step_start_time:.2f} 秒")
+                time_step += 1
+
+                # TODO: 存储到MongoDB
+                selected_option, action, value = postprocess_action_lmm(output)
+                
+                # 保存到 MongoDB
+                execution_time = time.time() - step_start_time
+                await self.mongodb.save_action(
+                    selected_option=selected_option,
+                    action=action,
+                    value=value,
+                    task_id=task_id,  # 需要从某处获取
+                    step_number=time_step,
+                    execution_time=execution_time
+                )
 
 
 if __name__ == "__main__":

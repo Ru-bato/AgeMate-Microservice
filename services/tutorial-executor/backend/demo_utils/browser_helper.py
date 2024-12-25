@@ -128,10 +128,11 @@ ignore_args = [
 async def normal_launch_async(playwright: Playwright,trace_dir=None):
     browser = await playwright.chromium.launch(
         traces_dir=None,
-        headless=False,
+        # headless=False,
         args=[
             "--disable-blink-features=AutomationControlled",
         ],
+        headless=True
         # ignore_default_args=ignore_args,
         # chromium_sandbox=False,
     )
@@ -140,11 +141,12 @@ async def normal_launch_async(playwright: Playwright,trace_dir=None):
 
 def normal_launch(playwright: Playwright):
     browser = playwright.chromium.launch(
-        headless=False,
+        # headless=False,
         args=['--incognito',
               "--disable-blink-features=AutomationControlled",
               ],
         ignore_default_args=ignore_args,
+        headless=True
     )
     return browser
 
@@ -195,7 +197,7 @@ def normal_new_context(
 def persistent_launch(playwright: Playwright, user_data_dir: str = ""):
     context = playwright.chromium.launch_persistent_context(
         user_data_dir=user_data_dir,
-        headless=False,
+        # headless=False,
         args=["--no-default-browser-check",
               "--no_sandbox",
               "--disable-blink-features=AutomationControlled",
@@ -206,7 +208,8 @@ def persistent_launch(playwright: Playwright, user_data_dir: str = ""):
         bypass_csp=True,
         slow_mo=1000,
         chromium_sandbox=True,
-        channel="chrome-dev"
+        channel="chrome-dev",
+        headless=True
     )
     return context
 
@@ -214,7 +217,7 @@ def persistent_launch(playwright: Playwright, user_data_dir: str = ""):
 async def persistent_launch_async(playwright: Playwright, user_data_dir: str = "", record_video_dir="video"):
     context = await playwright.chromium.launch_persistent_context(
         user_data_dir=user_data_dir,
-        headless=False,
+        headless=True,
         args=[
             "--disable-blink-features=AutomationControlled",
         ],
@@ -246,6 +249,7 @@ def connect_via_cdp(playwright: Playwright, user_data_dir: str = ""):
     )
     browser = playwright.chromium.connect_over_cdp(
         endpoint_url=cdp_address,
+        # headless=True
     )
     return browser
 

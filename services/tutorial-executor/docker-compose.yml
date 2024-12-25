@@ -9,7 +9,7 @@ services:
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:/tutorial-executor-backend/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://tutorial-generator-backend:8003/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

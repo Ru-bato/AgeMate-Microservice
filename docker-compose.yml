@@ -7,6 +7,7 @@ services:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
+      - "--log.level=DEBUG"
       # - "--entrypoints.websecure.address=:443"
       # - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
       # - "--certificatesresolvers.myresolver.acme.email=myemail@example.com"
@@ -23,6 +24,10 @@ services:
     labels:
       - "traefik.enable=true"
     restart: always
+    # environment:
+    #   - http_proxy=http://host.docker.internal:7890
+    #   - https_proxy=http://host.docker.internal:7890
+    #   - no_proxy=localhost,127.0.0.1,*.local,*.docker
 
   # 中间件：RabbitMQ
   rabbitmq:
@@ -94,6 +99,7 @@ services:
       - app-network
     depends_on:
       - rabbitmq
+      - guidebook-generator-mongodb
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://guidebook-generator-backend:8001/health || exit 1"]
       interval: 30s
@@ -138,10 +144,12 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - RABBITMQ_URL=${RABBITMQ_URL}
+      - MONGODB_URL=mongodb://root:age123456@tutorial-executor-mongodb:27017/tutorial_executor?authSource=admin
     networks:
       - app-network
     depends_on:
       - rabbitmq
+      - tutorial-executor-mongodb
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://tutorial-executor-backend:8003/health || exit 1"]
       interval: 30s
@@ -162,10 +170,12 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - RABBITMQ_URL=${RABBITMQ_URL}
+      - MONGODB_URL=mongodb://root:age123456@tutorial-generator-mongodb:27017/tutorial_generator?authSource=admin
     networks:
       - app-network
     depends_on:
       - rabbitmq
+      - tutorial-generator-mongodb
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://tutorial-generator-backend:8004/health || exit 1"]
       interval: 30s
@@ -238,6 +248,48 @@ services:
       - "traefik.http.services.weather-entertainment-backend.loadbalancer.server.port=8006"
     restart: on-failure
 
+  # 微服务tutorial-generator MongoDB数据库
+  tutorial-generator-mongodb:
+    image: mongo:latest
+    container_name: tutorial-generator-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: age123456
+      MONGO_INITDB_DATABASE: tutorial_generator
+    volumes:
+      - tutorial_generator_mongodb_data:/data/db
+    networks:
+      - app-network
+    restart: always
+
+  # 微服务tutorial-executor MongoDB数据库
+  tutorial-executor-mongodb:
+    image: mongo:latest
+    container_name: tutorial-executor-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: age123456
+      MONGO_INITDB_DATABASE: tutorial_executor
+    volumes:
+      - tutorial_executor_mongodb_data:/data/db
+    networks:
+      - app-network
+    restart: always
+
+  # 微服务Guidebook Generator MongoDB数据库
+  guidebook-generator-mongodb:
+    image: mongo:latest
+    container_name: guidebook-generator-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: age123456
+      MONGO_INITDB_DATABASE: guidebook_generator
+    volumes:
+      - guidebook_generator_mongodb_data:/data/db
+    networks:
+      - app-network
+    restart: always
+
 networks:
   app-network:
     driver: bridge
@@ -261,3 +313,9 @@ volumes:
     #   type: none
     #   o: bind
     #   device: /data/mysql_data
+  tutorial_generator_mongodb_data:
+    driver: local
+  tutorial_executor_mongodb_data:
+    driver: local
+  guidebook_generator_mongodb_data:
+    driver: local
