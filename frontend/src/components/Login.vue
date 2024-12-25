@@ -28,7 +28,7 @@ function getCurrentFormattedTime(): string {
 // 登录处理函数
 const handleLogin = async () => {
   console.log("here try to route to home")
-  router.push({ name: 'Home', params: {userID:111 , username:'username.value', authority:1} });
+  router.push({ name:'Home', params: {username:'nihao', authority:1} });
   return;
   try {
     // 发送登录请求，验证用户和密码

@@ -1,96 +1,49 @@
 <template>
-    <div class="home-page">
-        <div class="welcome-message">
-            <h1>欢迎回来, {{ username }}！</h1>
-            <p>用户ID: {{ userID }}</p>
-        </div>
-
-        <div class="home-actions">
-            <button @click="logout" class="logout-button">退出登录</button>
+    <div class="home-view">
+        <NavBar :username="username" :authority="authority" />
+        <div class="content">
+            <router-view /> <!-- 这里显示子页面 -->
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { defineProps,onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-
-// 接收来自登录页面传递的 userID 和 username
-const props = defineProps({
-    userID: {
-        type: Number,
-        required: true
-    },
-    username: {
-        type: String,
-        required: true
-    },
-    authority: {
-        type: Number,
-        required: true
-    }
-});
+import NavBar from '@/components/NavBar.vue';
 
 const router = useRouter();
 
-const userID =ref(props.data.userID)
+const props = defineProps({
+    username: {
+        type: String,
+        required: true,
+    },
+    authority: {
+        type: Number,
+        required: true,
+    },
+});
 
-// 退出登录，跳转回登录页面
-const logout = () => {
-    router.push({ name: 'Login' });
-};
+onMounted(() => {
+    router.push({name:"HomePage",params:{username:props.username,authority:props.authority}})
+})
 </script>
 
 <style scoped>
-.home-page {
+.home-view {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    background-color: #f0f0f0;
 }
 
-.welcome-message {
-    margin-bottom: 30px;
-    text-align: center;
-}
-
-h1 {
-    font-size: 24px;
-    color: #333;
-}
-
-p {
-    font-size: 18px;
-    color: #666;
-}
-
-.home-actions {
-    display: flex;
-    gap: 20px;
-}
-
-button {
-    padding: 10px 20px;
-    font-size: 16px;
-    border-radius: 5px;
-    cursor: pointer;
-    border: none;
-    background-color: #4CAF50;
+.navbar {
+    width: 250px;
+    background-color: #2c3e50;
     color: white;
-    transition: background-color 0.3s;
 }
 
-button:hover {
-    background-color: #45a049;
-}
-
-.logout-button {
-    background-color: #f44336;
-}
-
-.logout-button:hover {
-    background-color: #e53935;
+.content {
+    margin-left: 250px;
+    flex-grow: 1;
+    padding: 20px;
 }
 </style>
