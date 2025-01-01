@@ -16,6 +16,11 @@ async def read_root():
     logging.debug("This is a debug message")
     return {"message": "Welcome to the Log Management API"}
 
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+
+
 # 主函数
 if __name__ == '__main__':
     uvicorn.run("main:app", reload=True)

@@ -159,6 +159,10 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.tutorial-executor-backend.rule=PathPrefix(`/tutorial-executor`)"
       - "traefik.http.services.tutorial-executor-backend.loadbalancer.server.port=8003"
+      - "traefik.http.middlewares.tutorial-executor-stripprefix.stripprefix.prefixes=/tutorial-executor"
+      - "traefik.http.routers.tutorial-executor-ws.rule=PathPrefix(`/tutorial-executor/ws`)"
+      - "traefik.http.routers.tutorial-executor-ws.entrypoints=web"
+      - "traefik.http.routers.tutorial-executor-ws.service=tutorial-executor-backend"
     restart: on-failure
 
   # 微服务tutorial-generator 后端
@@ -167,10 +171,13 @@ services:
       context: ./services/tutorial-generator/backend
       dockerfile: Dockerfile.backend
     image: muyongzhen/agetutor:tutorial-generator-backend-latest
+    ports:
+      - "8003:8003"
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - RABBITMQ_URL=${RABBITMQ_URL}
       - MONGODB_URL=mongodb://root:age123456@tutorial-generator-mongodb:27017/tutorial_generator?authSource=admin
+      - WEBSOCKET_URI=ws://localhost:8003/ws
     networks:
       - app-network
     depends_on:

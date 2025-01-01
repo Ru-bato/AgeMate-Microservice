@@ -13,6 +13,7 @@ from pydantic import AnyUrl
 from pydantic_settings import BaseSettings
 from typing import Optional, List, Dict
 
+
 class Settings(BaseSettings):
     """
     Pydantic model for application settings.
@@ -26,7 +27,7 @@ class Settings(BaseSettings):
 
     # Config path
     CONFIG_PATH: str = "config/demo_mode.toml"
-    
+
     # Application settings
     APP_NAME: str = "My Awesome App"
     APP_VERSION: str = "0.1.0"
@@ -123,6 +124,7 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = 'utf-8'
         case_sensitive = True
+
 
 # Initialize settings
 settings = Settings()

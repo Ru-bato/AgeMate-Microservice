@@ -31,7 +31,7 @@ async def start_seeact(task_data: dict):
 def tutorial_generator(request: Request):
     return {"message": "Tutorial Generator API"}
 
-@app.get(f"{BASE_URL}/health")
+@app.get("/health")
 def health_check():
     return {"status": "ok"}
 
