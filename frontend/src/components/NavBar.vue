@@ -6,10 +6,11 @@
       <li><router-link to="/home/tutorial-execute">教程执行</router-link></li>
       <li><router-link to="/home/log-management">日志管理</router-link></li>
       <li><router-link to="/home/guideline-generate">查看指导书</router-link></li>
+      <li><router-link to="/home/my-favourites">我的指导书收藏</router-link></li>
       <!-- <li><router-link to="/home/weather-entertainment">天气及娱乐</router-link></li> -->
     </ul>
     <div class="user-info">
-      <span>{{ username }} ({{ authorityText }})</span>
+      <!-- <span>{{ username }} ({{ authorityText }})</span> -->
     </div>
   </div>
 </template>
@@ -38,13 +39,15 @@ const authorityText = ref(
   position: fixed;
   /* top: 0;
   left: 0; */
+  left: 0;
+  top: 30px;
   width: 250px;
   height: 100%;
   background-color: #2c3e50;
-  padding-top: 60px; /* 上边栏高度 */
+  padding-top: 80px;
+  /* 上边栏高度 */
   color: white;
   font-family: Arial, sans-serif;
-  box-sizing: border-box;
 }
 
 .nav-list {
@@ -69,9 +72,9 @@ const authorityText = ref(
 }
 
 .user-info {
-  position: absolute;
+  position: fixed;
   bottom: 20px;
-  width: 100%;
+  width: 250px;
   text-align: center;
   color: #ecf0f1;
 }
