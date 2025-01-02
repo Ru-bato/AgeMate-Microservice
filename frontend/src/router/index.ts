@@ -1,6 +1,6 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '@/views/HomeView.vue'
-import LoginRegisterView from '@/views/LoginRegisterView.vue'
+import { createRouter, createWebHistory } from 'vue-router';
+import HomeView from '@/views/HomeView.vue';
+import LoginRegisterView from '@/views/LoginRegisterView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -12,8 +12,8 @@ const router = createRouter({
       children: [
         {
           path: '',
-          name: 'HomePage',
-          component: () => import('@/components/Home.vue'),
+          name: 'HomeContent',
+          component: () => import('@/components/HomeContent.vue')
         },
         {
           path: 'tutorial-generate',
@@ -40,12 +40,7 @@ const router = createRouter({
           name: 'WeatherEntertainment',
           component: () => import('@/components/WeatherEntertainment.vue'),
         },
-        {
-          path: 'my-favourites',
-          name: 'MyFavourites',
-          component: () => import('@/components/MyFavourites.vue'),
-        },
-      ],
+      ]
     },
     {
       path: '/',
@@ -55,14 +50,14 @@ const router = createRouter({
     {
       path: '/speech',
       name: 'speech',
-      component: () => import('@/components/SpeechToText.vue'),
+      component: () => import('@/components/SpeechToText.vue')
     },
     {
       path: '/text',
       name: 'text',
-      component: () => import('@/components/TextToSpeech.vue'),
-    },
+      component: () => import('@/components/TextToSpeech.vue')
+    }
   ],
-})
+});
 
-export default router
+export default router;

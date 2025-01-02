@@ -1,0 +1,23 @@
+/* styles/dialog.css */
+
+.seeact-operation-dialog {
+    font-family: Arial, sans-serif;
+  }
+  
+  .seeact-operation-dialog p {
+    margin: 0 0 10px 0;
+  }
+  
+  .seeact-operation-dialog button {
+    margin-right: 5px;
+    padding: 5px 10px;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .seeact-operation-dialog button:hover {
+    background-color: #0056b3;
+  }

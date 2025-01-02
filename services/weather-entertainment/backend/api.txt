@@ -1,0 +1,38 @@
+初步拟定使用中国气象局（http://openweather.weather.com.cn）的api接口
+后续可能使用国家气象中心（https://data.cma.cn/）的免费计划
+
+api调用弄参考以下文章
+https://blog.csdn.net/growing_tree/article/details/38896689
+
+1.首先获取省份列表
+http://www.weather.com.cn/data/city3jdata/china.html
+2.通过上面获得的省份代码获取城市列表：
+http://www.weather.com.cn/data/city3jdata/provshi/[ip_id].html
+3.获取城市下的区域信息
+通过上一步可获取城市代码 如：南京为 01
+把01接到第一步获得的省份代码后 获得 1011901 代表江苏省南京市
+http://www.weather.com.cn/data/city3jdata/station/[ip_id+city_id].html
+4.获取区域代码
+把上面获得的区域代码如：01（代表南京市区） 接到第三步获得的江苏省南京市的代码 1011901
+得到 101190101 代表江苏省南京市南京市区的代码。
+http://m.weather.com.cn/data/101190101.html
+
+已知以上api获取的数据都是json格式
+
+get_state("state")
+输入：省名称
+输出：http://www.weather.com.cn/data/city3jdata/china.html里对应的省编号
+
+get_city("city")
+输入：省编号, 市名称
+输出：省编号 + http://www.weather.com.cn/data/city3jdata/[省编号].html里对应的市编号
+
+get_region("city")
+输入：省编号, 市编号, 地区名称
+输出：省编号 + 市编号 + http://www.weather.com.cn/data/city3jdata/[省编号 + 市编号].html里对应的地区编号
+
+@app.get (向网页查询)
+api					python函数	功能
+/api/weather/sk	    weather_sk	根据输入的省名称、市名称、地区名称获取天气信息 例子接口http://www.weather.com.cn/data/sk/101190101.html
+/api/weather/cityinfo	weather_cityinfo	根据输入的省名称、市名称、地区名称获取天气信息 例子接口http://www.weather.com.cn/data/cityinfo/101190101.html
+/api/weather/forecast	weather_forecast	根据输入的省名称、市名称、地区名称获取天气信息 例子接口http://m.weather.com.cn/data/101190101.html
