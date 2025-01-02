@@ -105,7 +105,7 @@ def main():
         return
 
     # 设置端口转发
-    port = 9222
+    port = 9223
     if setup_port_forwarding(local_ip, port):
         print(f"成功配置端口转发：{public_ip}:{port} -> {local_ip}:{port}")
     else:
