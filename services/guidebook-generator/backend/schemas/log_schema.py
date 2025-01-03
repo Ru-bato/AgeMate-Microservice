@@ -4,13 +4,11 @@ from pydantic import BaseModel
 from typing import Optional
 
 class LogCreate(BaseModel):
-    user_id: int
+    user_id: str
     log_file: bytes
 
-
 class LogResponse(BaseModel):
-    log_id: str
-    user_id: int
+    _id: str
+    user_id: str
     content: str
     created_at: Optional[datetime] = None
-    title: str  # 返回时也包括 title 字段

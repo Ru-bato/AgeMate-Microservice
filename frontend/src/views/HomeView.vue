@@ -1,80 +1,27 @@
-<<<<<<< HEAD
 <template>
-    <div class="home-view">
-        <NavBar :username="username" :authority="authority" />
-        <div class="content">
-            <router-view /> <!-- 这里显示子页面 -->
-        </div>
-    </div>
-</template>
-
-<script setup lang="ts">
-import { defineProps,onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import NavBar from '@/components/NavBar.vue';
-
-const router = useRouter();
-
-const props = defineProps({
-    username: {
-        type: String,
-        required: true,
-    },
-    authority: {
-        type: Number,
-        required: true,
-    },
-});
-
-onMounted(() => {
-    router.push({name:"HomePage",params:{username:props.username,authority:props.authority}})
-})
-</script>
-
-<style scoped>
-.home-view {
-    display: flex;
-}
-
-.navbar {
-    width: 250px;
-    background-color: #2c3e50;
-    color: white;
-}
-
-.content {
-    margin-left: 250px;
-    flex-grow: 1;
-    padding: 20px;
-}
-</style>
-=======
-<template>
-  <!-- <div class="home-view">
-    <NavBar :username="username" :authority="authority" />
-    <TopBar :username="username" :authority="authority" />
-    <div class="content">
-      <router-view />
-    </div>
-  </div> -->
-
-  <el-container>
-    <el-header>
-      <NavBar :username="username" :authority="authority" />
-    </el-header>
+  <div class="home-view">
     <el-container>
-      <el-aside>
-        <TopBar :username="username" :authority="authority" />
-      </el-aside>
-      <el-main><router-view /></el-main>
+      <el-header>
+        <TopBar :username="username" :authority="authority" @switchToChange="routeToChanginfo"/>
+      </el-header>
+      <el-container>
+        <el-aside v-if="!route.meta.fullWidth">
+          <NavBar :username="username" :authority="authority" />
+        </el-aside>
+        <el-main style="width: 100vw">
+          <router-view @search="handleSearch"></router-view>
+        </el-main>
+      </el-container>
     </el-container>
-  </el-container>
+  </div>
 </template>
 
 <script setup lang="ts">
-import TopBar from '@/components/TopBar.vue'
 import NavBar from '@/components/NavBar.vue'
-import { defineProps } from 'vue'
+import TopBar from '@/components/TopBar.vue'
+import { ref } from 'vue'
+import axios from 'axios'
+import { useRoute,useRouter } from 'vue-router'
 
 const props = defineProps({
   username: {
@@ -85,20 +32,78 @@ const props = defineProps({
     type: Number,
     required: true,
   },
+  access_token: {
+    type: String,
+    required: true
+  }
 })
 
-const username = props.username
-const authority = props.authority
+const username = ref(props.username);
+const authority = ref(props.authority);
+
+
+
+const searchResults = ref<string[]>([])
+
+const route = useRoute()
+const router = useRouter()
+
+const routeToChanginfo = () =>
+{
+  //路由到更改界面
+  router.push({ name: 'ChangeInfo', params: {authority: props.authority, username: props.username, access_token: props.access_token} })
+}
+
+// 处理搜索请求
+const handleSearch = async ({ query, url }: { query: string; url: string }) => {
+  if (!query.trim() && !url.trim()) return
+
+  try {
+    // 假设有一个API端点用于搜索，支持query和url参数
+    const response = await axios.get(`/api/search`, {
+      params: {
+        q: encodeURIComponent(query),
+        url: encodeURIComponent(url),
+      },
+    })
+    searchResults.value = response.data.results
+  } catch (error) {
+    console.error('搜索请求失败:', error)
+    searchResults.value = ['未找到相关结果']
+  }
+}
 </script>
 
 <style scoped>
 .home-view {
   display: flex;
+  height: 100vh;
+  /* 确保高度填满视口 */
+  overflow: hidden;
+  /* 防止内容溢出 */
 }
 
-.content {
+.el-header {
+  height: 60px;
+  /* 上边栏高度 */
+}
 
-  min-height: 100vh;
+.el-aside {
+  width: 250px;
+  /* 侧边栏宽度 */
+}
+
+.el-main.full-width {
+  flex: 1 1 100%;
+}
+
+.el-main {
+  padding: 20px;
+  overflow-y: auto;
+  background-color: #ecf0f1;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>
->>>>>>> origin/bsh

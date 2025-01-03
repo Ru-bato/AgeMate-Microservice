@@ -4,7 +4,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile.backend
     environment:
-      DATABASE_URL: ${DATABASE_URL:-"mysql://user:password@localhost:3306/db"}
+      DATABASE_URL: ${USER_MANAGER_MYSQL_URL:-"mysql+mysqldb://agetutor:age123456@user-manager-mysql:3306/user_manager_mysql"}
+      # DATABASE_URL: ${DATABASE_URL:-"mysql://user:password@localhost:3306/db"}
       RABBITMQ_URL: ${RABBITMQ_URL:-"amqp://guest:guest@localhost:5672/"}
     networks:
       - app-network

@@ -16,6 +16,22 @@
 <script lang="ts">
 import { defineComponent, ref } from 'vue'
 
+declare global {
+  interface Window {
+    webkitSpeechRecognition: any;
+    SpeechRecognition: any;
+  }
+  
+  interface SpeechRecognitionEvent extends Event {
+    results: SpeechRecognitionResultList;
+    resultIndex: number;
+  }
+
+  interface SpeechRecognitionError extends Event {
+    error: string;
+  }
+}
+
 interface Message {
   text: string
   type: 'user' | 'assistant'
@@ -26,7 +42,7 @@ export default defineComponent({
   setup() {
     const messages = ref<Message[]>([]) // 存储对话消息
     const isListening = ref(false) // 是否正在录音
-    let recognition: SpeechRecognition | null = null // 语音识别对象
+    let recognition: Window['SpeechRecognition'] | null = null // 语音识别对象
 
     // 初始化语音识别
     const initRecognition = () => {

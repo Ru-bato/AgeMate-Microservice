@@ -1,17 +1,3 @@
-<<<<<<< HEAD
-<script setup lang="ts">
-
-</script>
-
-<template>
-  <div class="app">
-    <router-view></router-view>
-  </div>
-
-</template>
-
-<style></style>
-=======
 <script setup lang="ts">
 
 </script>
@@ -30,4 +16,3 @@
   padding: 0 0;
 }
 </style>
->>>>>>> origin/bsh
