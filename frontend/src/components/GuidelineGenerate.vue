@@ -14,24 +14,36 @@
           <h2>{{ log.title }}</h2>
           <!-- 显示 title -->
         </div>
-        <!-- Card footer with buttons -->
+
+        <!-- Card footer with button -->
         <div class="card-footer">
           <el-button type="primary" @click="openMarkdownDialog(log)">点击查看</el-button>
           <el-button type="danger" @click="deleteLog(log.log_id)">删除</el-button>
           <!-- 添加删除按钮 -->
         </div>
       </el-card>
-    </div>
 
-    <!-- 使用 ElDialog 显示 Markdown 内容 -->
-    <el-dialog v-model="dialogVisible" title="日志内容" width="70%" @close="handleClose">
-      <div v-html="markdownContent" class="markdown-content"></div>
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button type="primary" @click="addFavorite(currentLog)">收藏</el-button>
+      <!-- Card component 5: 安全防护 -->
+      <el-card class="card" style="width: 1200px" shadow="hover">
+        <!-- Card header with title -->
+        <div class="card-header">
+          <h2>查看天气指导书</h2>
         </div>
-      </template>
-    </el-dialog>
+
+        <!-- Card body with content -->
+        <div class="card-body">
+          <p>如何查看今日天气？</p>
+        </div>
+
+        <!-- Card footer with button -->
+        <div class="card-footer">
+          <el-button type="primary" @click="openMarkdownDialog">点击查看</el-button>
+        </div>
+      </el-card>
+
+
+
+    </div>
   </div>
 </template>
 
@@ -144,7 +156,7 @@ const handleClose = () => {
 <style scoped>
 .card {
   width: 60%;
-  margin: 20px auto;
+  /* Adjust the card width as per your needs */
 }
 
 .card-header {
@@ -153,15 +165,134 @@ const handleClose = () => {
   color: #333;
 }
 
+.card-body {
+  margin: 20px 0;
+  font-size: 1rem;
+  color: #555;
+}
+
 .card-footer {
-  text-align: right;
-  /* 将所有内容右对齐 */
+  text-align: center;
   position: relative;
 }
 
 .el-button {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
   font-size: 1rem;
-  margin-left: 10px;
-  /* 给按钮添加间隔 */
 }
+
+/* 自定义弹框样式 */
+.markdown-dialog .el-message-box__wrapper .el-message-box__content {
+  width: 80%; /* 设置宽度为80%，根据需要调整 */
+  max-width: 900px; /* 设置最大宽度 */
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #2c3e50;
+}
+
+/* 样式化标题 */
+.markdown-dialog h1,
+.markdown-dialog h2 {
+  font-weight: bold;
+  color: #2c3e50;
+  margin-top: 20px;
+  line-height: 1.5;
+  /* 增加行高，优化视觉效果 */
+}
+
+.markdown-dialog h1 {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+.markdown-dialog h2 {
+  font-size: 22px;
+  margin-bottom: 15px;
+}
+
+/* 样式化代码块 */
+.markdown-dialog pre {
+  background-color: #f5f5f5;
+  border-radius: 6px;
+  padding: 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  color: #2d3436;
+  overflow-x: auto;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  /* 内阴影 */
+}
+
+/* 样式化列表 */
+.markdown-dialog ul,
+.markdown-dialog ol {
+  margin-left: 20px;
+  line-height: 1.8;
+  color: #34495e;
+}
+
+.markdown-dialog ul li,
+.markdown-dialog ol li {
+  font-size: 16px;
+  margin-bottom: 8px;
+  /* 增加间距，提升可读性 */
+}
+
+.markdown-dialog ul li {
+  list-style-type: disc;
+}
+
+.markdown-dialog ol li {
+  list-style-type: decimal;
+}
+
+/* 样式化引用块 */
+.markdown-dialog blockquote {
+  border-left: 6px solid #3498db;
+  /* 更粗的蓝色左边框 */
+  padding-left: 20px;
+  margin-left: 0;
+  font-style: italic;
+  color: #7f8c8d;
+  background-color: #ecf0f1;
+  font-size: 16px;
+  /* 调整字体大小 */
+  margin-bottom: 20px;
+  /* 增加底部间距 */
+}
+
+/* 调整弹框内容的按钮样式 */
+.markdown-dialog .el-message-box__btns {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.markdown-dialog .el-message-box__btns .el-button {
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+.markdown-dialog .el-message-box__btns .el-button--primary {
+  background-color: #3498db;
+  border-color: #3498db;
+}
+
+.markdown-dialog .el-message-box__btns .el-button--primary:hover {
+  background-color: #2980b9;
+  border-color: #2980b9;
+}
+
+   
+   /* 如有需要，增加优先级 */
+   .markdown-dialog .el-message-box__wrapper .el-message-box__content {
+     width: 80% !important;
+     max-width: 900px !important;
+   }
 </style>

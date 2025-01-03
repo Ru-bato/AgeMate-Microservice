@@ -52,21 +52,42 @@ class Worker(QObject):
 
     def start_chrome(self, chrome_path, user_data_dir):
         try:
+            logger.info("开始启动Chrome...")
+            
+            # 检查调试模式
+            logger.info("检查是否已在调试模式...")
+            if self.check_debug_port():
+                logger.info("Chrome已在调试模式运行")
+                self.started.emit()
+                self.status_check_timer.start()
+                return
+
+            # 检查现有Chrome
+            logger.info("检查是否有现有Chrome进程...")
+            if self.check_existing_chrome():
+                logger.info("发现现有Chrome进程，准备关闭...")
+                self.kill_existing_chrome()
+                logger.info("现有Chrome进程已关闭")
+
+            # 启动新实例
+            logger.info(f"启动新的Chrome实例，路径: {chrome_path}")
             cmd = [
                 chrome_path,
                 '--remote-debugging-port=9222',
                 '--remote-debugging-address=0.0.0.0',
                 '--remote-allow-origins=*',
-                '--no-first-run',  # 添加此参数避免首次运行弹窗
-                '--no-default-browser-check',  # 避免默认浏览器检查
+                '--no-first-run',
+                '--no-default-browser-check',
                 f'--user-data-dir={user_data_dir}'
             ]
+            logger.info(f"执行命令: {' '.join(cmd)}")
             self.chrome_process = subprocess.Popen(cmd)
+            logger.info("Chrome进程已启动")
             self.started.emit()
-            self.status_check_timer.start()  # 启动定时器进行状态检查
+            self.status_check_timer.start()
             
         except Exception as e:
-            logger.error(f"Chrome启动错误: {str(e)}")
+            logger.error(f"Chrome启动错误: {str(e)}", exc_info=True)
             self.finished.emit()
 
     def check_chrome_status(self):
@@ -113,6 +134,56 @@ class Worker(QObject):
             finally:
                 self.chrome_process = None
                 self.finished.emit()
+
+    def check_debug_port(self):
+        """检查调试端口是否已经在使用"""
+        try:
+            response = requests.get('http://localhost:9222/json/version', timeout=1)
+            return response.status_code == 200
+        except requests.RequestException:
+            return False
+
+    def check_existing_chrome(self):
+        """检查现有的Chrome进程"""
+        if platform.system() == 'Windows':
+            try:
+                output = subprocess.check_output(['tasklist', '/FI', 'IMAGENAME eq chrome.exe'], 
+                                              stderr=subprocess.DEVNULL,
+                                              encoding='gbk')  # 使用 GBK 编码
+                return 'chrome.exe' in output
+            except subprocess.CalledProcessError:
+                logger.error("执行tasklist命令失败", exc_info=True)
+                return False
+            except Exception as e:
+                logger.error(f"检查Chrome进程失败: {str(e)}", exc_info=True)
+                return False
+        else:
+            try:
+                output = subprocess.check_output(['pgrep', 'chrome']).decode()
+                return bool(output.strip())
+            except:
+                logger.error("检查Chrome进程失败", exc_info=True)
+                return False
+
+    def kill_existing_chrome(self):
+        """终止现有的Chrome进程"""
+        try:
+            logger.info("尝试终止现有Chrome进程...")
+            if platform.system() == 'Windows':
+                subprocess.run(['taskkill', '/F', '/IM', 'chrome.exe'], 
+                             check=True, 
+                             stderr=subprocess.DEVNULL)
+            else:
+                subprocess.run(['pkill', 'chrome'], check=True)
+            
+            # 等待进程完全终止
+            time.sleep(2)
+            logger.info("Chrome进程已终止")
+            
+        except subprocess.CalledProcessError:
+            logger.warning("终止Chrome进程时出现错误，进程可能已经不存在")
+        except Exception as e:
+            logger.error(f"终止Chrome进程时出现未知错误: {str(e)}", exc_info=True)
 
 class ChromeDebugLauncher(QMainWindow):
     def __init__(self):

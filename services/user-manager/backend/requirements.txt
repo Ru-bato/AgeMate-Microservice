@@ -3,3 +3,5 @@ fastapi
 mysqlclient
 sqlalchemy==2.0.10
 pydantic==1.10.7
+python-jose
+passlib

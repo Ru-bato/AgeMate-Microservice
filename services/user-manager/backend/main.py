@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Developed by AlecNi @ 2024/12/29
+# Developed by AlecNi @ 2025/1/2
 # Description: Implementing a user management system with OAuth2.0 + JWT authentication.
 # tested：
 # 1. regist(user & admin)
@@ -25,12 +25,14 @@ from sqlalchemy import create_engine, Column, Integer, String, SmallInteger, CHA
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from pydantic import BaseModel
 from fastapi.security import OAuth2PasswordBearer
+from fastapi.middleware.cors import CORSMiddleware
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 import os
 import secrets
 from datetime import datetime, timedelta
 from typing import Union, Dict, Optional
+from fastapi.middleware.cors import CORSMiddleware
 
 USER_BASE_URL = "/api/user"
 ADMIN_BASE_URL = "/api/admin"
@@ -52,6 +54,23 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")  # Password ha
 
 # FastAPI application initialization
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # You can replace with "*" to get low-couple
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 允许的前端 URL
+    allow_credentials=True,
+    allow_methods=["*"],  # 允许所有 HTTP 方法
+    allow_headers=["*"],  # 允许所有 HTTP 头
+)
 
 # SQLAlchemy model for User
 class User(Base):
@@ -145,7 +164,7 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
-@app.get(f"{USER_BASE_URL}/log")
+@app.post(f"{USER_BASE_URL}/log")
 def log_request(login_request: LoginRequest, db: Session = Depends(get_db)) -> Dict[str, Union[str, bool]]:
     user = get_user_by_username(db, login_request.username)
     if user and verify_password(login_request.password, user.password):  # Validate username and password
@@ -157,11 +176,11 @@ def log_request(login_request: LoginRequest, db: Session = Depends(get_db)) -> D
 class AccountRequest(BaseModel):
     username: str
 
-@app.get(f"{USER_BASE_URL}/account")
+@app.post(f"{USER_BASE_URL}/account")
 def get_account(account_request: AccountRequest, db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
     requestor = get_user_by_username(db, current_user)
     if account_request.username != current_user and requestor.authority != 0:
-        return {"status": "unauthorized", "message": "You can only access your own account details"}
+        raise HTTPException(status_code=403, detail="You can only access your own account details")
     
     user = get_user_by_username(db, account_request.username)
     if user:
@@ -179,7 +198,7 @@ def find_userID(findback_request: FindBackRequest, db: Session = Depends(get_db)
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     if user:
         return {"userID": str(user.userID)}  # Return userID if found
-    return {"userID": "unknown"}  # Return "unknown" if user not found
+    return {"userID": ""}  # Return None if user not found
 
 # API route to handle user registration (creates a new user)
 @app.post(f"{USER_BASE_URL}/regist")
@@ -207,7 +226,7 @@ def change_account(change_account_request: ChangeAccountRequest, db: Session = D
     user = get_user_by_id(db, change_account_request.userID)
     changer = get_user_by_username(db, current_user)
     if user.username != current_user and changer.authority != 0:
-        return {"status": "unauthorized", "message": "You can only change your own account"}
+        raise HTTPException(status_code=403, detail="You can only change your own account")
 
     if user:
         user.username = change_account_request.username
@@ -228,7 +247,7 @@ def change_password(change_password_request: ChangePasswordRequest, db: Session 
     user = get_user_by_id(db, change_password_request.userID)
     changer = get_user_by_username(db, current_user)
     if user.username != current_user and changer.authority != 0:
-        return {"status": "unauthorized", "message": "You can only change your own account"}
+        raise HTTPException(status_code=403, detail="You can only change your own account")
     
     if user:
         user.password = get_password_hash(change_password_request.password)  # Hash and update password

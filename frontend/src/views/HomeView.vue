@@ -2,7 +2,7 @@
   <div class="home-view">
     <el-container>
       <el-header>
-        <TopBar :username="username" :authority="authority" />
+        <TopBar :username="username" :authority="authority" @switchToChange="routeToChanginfo"/>
       </el-header>
       <el-container>
         <el-aside v-if="!route.meta.fullWidth">
@@ -21,7 +21,7 @@ import NavBar from '@/components/NavBar.vue'
 import TopBar from '@/components/TopBar.vue'
 import { ref } from 'vue'
 import axios from 'axios'
-import { useRoute } from 'vue-router'
+import { useRoute,useRouter } from 'vue-router'
 
 const props = defineProps({
   username: {
@@ -32,14 +32,27 @@ const props = defineProps({
     type: Number,
     required: true,
   },
+  access_token: {
+    type: String,
+    required: true
+  }
 })
 
-const username = props.username
-const authority = props.authority
+const username = ref(props.username);
+const authority = ref(props.authority);
+
+
 
 const searchResults = ref<string[]>([])
 
 const route = useRoute()
+const router = useRouter()
+
+const routeToChanginfo = () =>
+{
+  //路由到更改界面
+  router.push({ name: 'ChangeInfo', params: {authority: props.authority, username: props.username, access_token: props.access_token} })
+}
 
 // 处理搜索请求
 const handleSearch = async ({ query, url }: { query: string; url: string }) => {
@@ -64,16 +77,20 @@ const handleSearch = async ({ query, url }: { query: string; url: string }) => {
 <style scoped>
 .home-view {
   display: flex;
-  height: 100vh; /* 确保高度填满视口 */
-  overflow: hidden; /* 防止内容溢出 */
+  height: 100vh;
+  /* 确保高度填满视口 */
+  overflow: hidden;
+  /* 防止内容溢出 */
 }
 
 .el-header {
-  height: 60px; /* 上边栏高度 */
+  height: 60px;
+  /* 上边栏高度 */
 }
 
 .el-aside {
-  width: 250px; /* 侧边栏宽度 */
+  width: 250px;
+  /* 侧边栏宽度 */
 }
 
 .el-main.full-width {

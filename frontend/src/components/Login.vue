@@ -27,26 +27,36 @@ function getCurrentFormattedTime(): string {
 
 // 登录处理函数
 const handleLogin = async () => {
-  console.log("here try to route to home")
-  router.push({ name:'Home', params: {username:'nihao', authority:1} });
-  return;
+
   try {
     // 发送登录请求，验证用户和密码
-    const loginResponse = await axios.post('/api/user/log', {
-      username: username.value,
-      password: password.value,
-    });
+    const loginResponse = await axios.post("http://localhost:8005/api/user/log",
+
+      {
+        username: username.value,
+        password: password.value
+      }
+
+    );
 
     // 检查登录状态
-    if (loginResponse.data.status === 'true') {
+    if (loginResponse.data.status === 'success') {
       // 登录成功，获取用户信息
-      accountResponse.value = await axios.get(`/api/user/account?username=${username.value}`);
-      
-      const userID = accountResponse.value.data.userID;
-      const authority =accountResponse.value.data.authority;
+      accountResponse.value = await axios.post(`http://localhost:8005/api/user/account`,
+        {
+          username: username.value
+        },
+        {
+          headers:
+          {
+            Authorization: `Bearer ${loginResponse.data.access_token}`,
+          }
 
+        });
+      const authority = accountResponse.value.data.authority;
+      const _username = username.value;
       // 跳转到主页并携带用户信息
-      router.push({ name: 'Home', params: {userID:userID , username:username.value, authority:authority } });
+      router.push({ name: 'Home', params: { username: _username, authority: authority ,access_token:loginResponse.data.access_token} });
     } else {
       // 登录失败
       errorMessage.value = loginResponse.data.message || '登录失败，请检查用户名和密码';
@@ -115,7 +125,7 @@ setInterval(() => {
 }
 
 .background {
-  position:fixed;
+  position: fixed;
   /* 背景绝对定位，覆盖整个页面 */
   top: 0;
   left: -20%;

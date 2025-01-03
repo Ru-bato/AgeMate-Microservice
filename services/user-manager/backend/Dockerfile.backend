@@ -17,7 +17,6 @@ RUN apt-get update && apt-get install -y \
 # 复制项目的依赖文件并安装依赖
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
-
 # 复制应用程序代码
 COPY . /app/
 
@@ -30,4 +29,4 @@ ENV ENVIRONMENT=development
 EXPOSE 8005
 
 # 启动命令
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8005", "--reload", "--log-level", "debug"]
+CMD ["uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8005", "--reload", "--log-level", "debug"]

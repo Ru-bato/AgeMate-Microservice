@@ -13,6 +13,9 @@ RUN npm install
 # 复制所有前端源代码到容器中
 COPY . .
 
+# 在构建前重新安装 esbuild 以确保版本匹配
+RUN npm uninstall esbuild && npm install esbuild@latest
+
 # 执行代码格式化命令
 RUN npm run format
 

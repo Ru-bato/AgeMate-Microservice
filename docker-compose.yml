@@ -200,6 +200,9 @@ services:
       context: ./services/user-manager/backend
       dockerfile: Dockerfile.backend
     image: muyongzhen/agetutor:user-manager-backend-latest
+    # expictly set the port
+    ports:
+      - "8005:8005"
     environment:
       - DATABASE_URL=${USER_MANAGER_MYSQL_URL}
       - RABBITMQ_URL=${RABBITMQ_URL}
@@ -237,6 +240,9 @@ services:
       context: ./services/weather-entertainment/backend
       dockerfile: Dockerfile.backend
     image: muyongzhen/agetutor:weather-entertainment-backend-latest
+    # expictly set the port
+    ports:
+      - "8006:8006"
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - RABBITMQ_URL=${RABBITMQ_URL}

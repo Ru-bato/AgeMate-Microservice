@@ -27,12 +27,9 @@
           <div class="form-group">
             <select v-model="role" required>
               <option value="" disabled selected>请选择身份</option>
-              <option value="student">学生账户</option>
+              <option value="student">用户账户</option>
               <option value="admin">管理员账户</option>
             </select>
-          </div>
-          <div v-if="role === 'admin'" class="form-group">
-            <input type="password" id="adminPassword" v-model="adminPassword" placeholder="请输入管理员密码" required />
           </div>
           <button type="submit" class="register-button">注册新账号</button>
         </form>
@@ -54,7 +51,6 @@
   const checkPassword = ref('');
   const phone_number = ref('');
   const role = ref('');
-  const adminPassword = ref('');
   const errorMessage = ref('');
   const currentDate = ref(getCurrentFormattedTime());
   const router = useRouter();
@@ -79,7 +75,7 @@
   
     try {
       // 向后端发送注册请求
-      const response = await axios.post('/api/user/regist', {
+      const response = await axios.post('http://localhost:8005/api/user/regist', {
         username: username.value,
         password: password.value,
         phone_number: phone_number.value,
@@ -87,7 +83,7 @@
       });
   
       if (response.data.status === 'success') {
-        alert('注册成功！');
+        errorMessage.value = '注册成功！'
       } else {
         // 注册失败
         errorMessage.value = '注册失败，请稍后重试！';
