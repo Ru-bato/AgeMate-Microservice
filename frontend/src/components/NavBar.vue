@@ -1,12 +1,24 @@
 <template>
   <div class="navbar">
     <ul class="nav-list">
-      <li><router-link to="/home">首页</router-link></li>
-      <li><router-link to="/home/tutorial-generate">教程生成</router-link></li>
-      <li><router-link to="/home/tutorial-execute">教程执行</router-link></li>
-      <li><router-link to="/home/log-management">日志管理</router-link></li>
-      <li><router-link to="/home/guideline-generate">查看指导书</router-link></li>
-      <!-- <li><router-link to="/home/weather-entertainment">天气及娱乐</router-link></li> -->
+      <li>
+        <router-link :to="`/home/${props.username}/${props.authority}`">首页</router-link>
+      </li>
+      <li>
+        <router-link :to="`/home/${props.username}/${props.authority}/tutorial-generate`">教程生成</router-link>
+      </li>
+      <li>
+        <router-link :to="`/home/${props.username}/${props.authority}/tutorial-execute`">教程执行</router-link>
+      </li>
+      <li>
+        <router-link :to="`/home/${props.username}/${props.authority}/log-management`">日志管理</router-link>
+      </li>
+      <li>
+        <router-link :to="`/home/${props.username}/${props.authority}/guideline-generate`">查看指导书</router-link>
+      </li>
+      <li>
+        <router-link :to="`/home/${props.username}/${props.authority}/weather-entertainment`">天气及娱乐</router-link>
+      </li>
     </ul>
     <div class="user-info">
       <span>{{ username }} ({{ authorityText }})</span>
@@ -41,7 +53,8 @@ const authorityText = ref(
   width: 250px;
   height: 100%;
   background-color: #2c3e50;
-  padding-top: 60px; /* 上边栏高度 */
+  padding-top: 60px;
+  /* 上边栏高度 */
   color: white;
   font-family: Arial, sans-serif;
   box-sizing: border-box;

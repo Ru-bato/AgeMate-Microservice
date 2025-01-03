@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import NavBar from '@/components/NavBar.vue'
 import TopBar from '@/components/TopBar.vue'
-import { ref } from 'vue'
+import { ref} from 'vue'
 import axios from 'axios'
 import { useRoute } from 'vue-router'
 
@@ -34,8 +34,10 @@ const props = defineProps({
   },
 })
 
-const username = props.username
-const authority = props.authority
+const username = ref(props.username);
+const authority = ref(props.authority);
+
+
 
 const searchResults = ref<string[]>([])
 

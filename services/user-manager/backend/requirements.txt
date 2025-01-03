@@ -1,6 +1,5 @@
 uvicorn[standard]
-fastapi 
-uvicorn
+fastapi
 mysqlclient
 sqlalchemy==2.0.10
 pydantic==1.10.7

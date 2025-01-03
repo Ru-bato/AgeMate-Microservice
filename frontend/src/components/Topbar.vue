@@ -8,14 +8,14 @@
       <button @click="handleSearch">🔍</button>
     </div>
     <div class="user-actions">
-      <span>{{ username }} ({{ authorityText }})</span>
+      <span>{{ props.username }} ({{ Number(props.authority) ===  1 ? '用户' : '管理员'}})</span>
       <button @click="logout">🔓 退出</button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { defineProps, ref } from 'vue'
+import { defineProps, ref} from 'vue'
 import { useRouter } from 'vue-router'
 
 const props = defineProps({
@@ -31,9 +31,7 @@ const props = defineProps({
 
 const router = useRouter()
 
-const authorityText = ref(
-  props.authority === 1 ? '用户' : '管理员'
-)
+
 
 const searchQuery = ref('')
 
@@ -45,6 +43,7 @@ const handleSearch = () => {
 }
 
 const logout = () => {
+  console.log(props.username, Number(props.authority) ===  1 ? '用户' : '管理员');
   // 这里添加退出登录的逻辑
   console.log('用户已退出')
   router.push({ name: 'Login' })
@@ -108,6 +107,7 @@ const logout = () => {
   display: flex;
   align-items: center;
   gap: 15px;
+  font-size: 1rem;
 }
 
 .user-actions button {

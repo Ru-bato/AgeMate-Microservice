@@ -27,31 +27,36 @@ function getCurrentFormattedTime(): string {
 
 // 登录处理函数
 const handleLogin = async () => {
-  
+
   try {
     // 发送登录请求，验证用户和密码
-    const loginResponse = await axios.post('http://localhost:8005/user-manager/api/user/log', {
-      username: username.value,
-      password: password.value,
-    });
+    const loginResponse = await axios.post("http://localhost:8005/api/user/log",
+
+      {
+        username: username.value,
+        password: password.value
+      }
+
+    );
 
     // 检查登录状态
     if (loginResponse.data.status === 'success') {
       // 登录成功，获取用户信息
-      accountResponse.value = await axios.post(`http://localhost:8005/user-manager/api/user/account`,
-      {
-        username: username.value
-      },
-      {
-        headers:
+      accountResponse.value = await axios.post(`http://localhost:8005/api/user/account`,
         {
-          Authorization: `Bearer ${loginResponse.data.access_token}`,
-        }
-      });
-      const authority =accountResponse.value.data.authority;
+          username: username.value
+        },
+        {
+          headers:
+          {
+            Authorization: `Bearer ${loginResponse.data.access_token}`,
+          }
 
+        });
+      const authority = accountResponse.value.data.authority;
+      const _username = username.value;
       // 跳转到主页并携带用户信息
-      router.push({ name: 'Home', params: { username:username.value, authority:authority } });
+      router.push({ name: 'Home', params: { username: _username, authority: authority } });
     } else {
       // 登录失败
       errorMessage.value = loginResponse.data.message || '登录失败，请检查用户名和密码';
@@ -94,6 +99,9 @@ setInterval(() => {
       <div class="button-container">
         <button @click="$emit('switchToRegister')" class="register-button">去注册</button>
       </div>
+      <div class="button-container">
+        <button @click="$emit('switchToChange')" class="register-button">去修改信息</button>
+      </div>
     </div>
   </div>
 </template>
@@ -120,7 +128,7 @@ setInterval(() => {
 }
 
 .background {
-  position:fixed;
+  position: fixed;
   /* 背景绝对定位，覆盖整个页面 */
   top: 0;
   left: -20%;

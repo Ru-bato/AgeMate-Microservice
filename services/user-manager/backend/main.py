@@ -1,21 +1,31 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# Developed by AlecNi @ 2024/12/29
+# Developed by AlecNi @ 2025/1/2
 # Description: Implementing a user management system with OAuth2.0 + JWT authentication.
 # tested：
-# 1. regist
-# 2. log
+# 1. regist(user & admin)
+# 2. log(user & admin)
 # 3. health
 # 4. admin get all users
+# 5. user get all users(denied)
+# 6. get account by username(user)
+# 7. findback ID by username(user)
+# 8. changeAccount(user)
+# 9. changePassword(user)
+# 10. get all users(admin)
 # TODO:
-# test other api
-#
+# 1. findback permission(admin)
+# 2. account permission(user)
+# 3. changeAccount(admin)
+# 4. changePassword(admin)
+# 5. admin get user account by username
 
 from fastapi import FastAPI, Depends, HTTPException, status
 from sqlalchemy import create_engine, Column, Integer, String, SmallInteger, CHAR
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from pydantic import BaseModel
 from fastapi.security import OAuth2PasswordBearer
+from fastapi.middleware.cors import CORSMiddleware
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 import os
@@ -24,8 +34,8 @@ from datetime import datetime, timedelta
 from typing import Union, Dict, Optional
 from fastapi.middleware.cors import CORSMiddleware
 
-USER_BASE_URL = "/user-manager/api/user"
-ADMIN_BASE_URL = "/user-manager/api/admin"
+USER_BASE_URL = "/api/user"
+ADMIN_BASE_URL = "/api/admin"
 
 # Configuration for JWT and password hashing
 SECRET_KEY = os.getenv("SECRET_KEY") or secrets.token_urlsafe(32)  # Generate or fetch the secret key
@@ -44,6 +54,15 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")  # Password ha
 
 # FastAPI application initialization
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # You can replace with "*" to get low-couple
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -159,21 +178,27 @@ class AccountRequest(BaseModel):
 
 @app.post(f"{USER_BASE_URL}/account")
 def get_account(account_request: AccountRequest, db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
+    requestor = get_user_by_username(db, current_user)
+    if account_request.username != current_user and requestor.authority != 0:
+        raise HTTPException(status_code=403, detail="You can only access your own account details")
+    
     user = get_user_by_username(db, account_request.username)
     if user:
-        return {"userID": user.userID, "phone_number": user.phone_number}  # Return user account details
+        return {"userID": user.userID, "username": user.username, "phone_number": user.phone_number, "authority": user.authority}  # Return user account details
     return {"status": "failed"}  # Invalid login or authorization
 
 # API route to handle password recovery using username
 class FindBackRequest(BaseModel):
     username: str
 
-@app.post(f"{USER_BASE_URL}/findback")
+@app.get(f"{USER_BASE_URL}/findback")
 def find_userID(findback_request: FindBackRequest, db: Session = Depends(get_db)) -> Dict[str, str]:
     user = get_user_by_username(db, findback_request.username)
+    if user.authority == 0:  # 验证当前用户是否为管理员
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
     if user:
         return {"userID": str(user.userID)}  # Return userID if found
-    return {"userID": "unknown"}  # Return "unknown" if user not found
+    return {"userID": ""}  # Return None if user not found
 
 # API route to handle user registration (creates a new user)
 @app.post(f"{USER_BASE_URL}/regist")
@@ -197,8 +222,12 @@ class ChangeAccountRequest(BaseModel):
     authority: int
 
 @app.post(f"{USER_BASE_URL}/changeAccount")
-def change_account(change_account_request: ChangeAccountRequest, db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
+def change_account(change_account_request: ChangeAccountRequest, db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):    
     user = get_user_by_id(db, change_account_request.userID)
+    changer = get_user_by_username(db, current_user)
+    if user.username != current_user and changer.authority != 0:
+        raise HTTPException(status_code=403, detail="You can only change your own account")
+
     if user:
         user.username = change_account_request.username
         user.password = get_password_hash(change_account_request.password)  # Hash the new password
@@ -216,6 +245,10 @@ class ChangePasswordRequest(BaseModel):
 @app.post(f"{USER_BASE_URL}/changePassword")
 def change_password(change_password_request: ChangePasswordRequest, db: Session = Depends(get_db), current_user: str = Depends(get_current_user)):
     user = get_user_by_id(db, change_password_request.userID)
+    changer = get_user_by_username(db, current_user)
+    if user.username != current_user and changer.authority != 0:
+        raise HTTPException(status_code=403, detail="You can only change your own account")
+    
     if user:
         user.password = get_password_hash(change_password_request.password)  # Hash and update password
         db.commit()
@@ -229,16 +262,6 @@ def show_userlists(db: Session = Depends(get_db), token: str = Depends(oauth2_sc
         raise HTTPException(status_code=403, detail="Insufficient permissions")
     return get_all_users(db)  # 返回所有用户
 
-# API 路由：管理员查看单个用户信息
-@app.get(f"{ADMIN_BASE_URL}/acount")
-def show_account(userID: int, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    if not verify_admin_privileges(token):  # 验证当前用户是否为管理员
-        raise HTTPException(status_code=403, detail="Insufficient permissions")
-    user = get_user_by_id(db, userID)
-    if user:
-        return {"userID": user.userID, "username": user.username, "phone_number": user.phone_number, "authority": user.authority}
-    raise HTTPException(status_code=404, detail="User not found")
-
 # API route to check the health of the database connection
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)) -> Dict[str, str]:
@@ -251,4 +274,5 @@ def health_check(db: Session = Depends(get_db)) -> Dict[str, str]:
 # Run the FastAPI app with Uvicorn
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8005)
