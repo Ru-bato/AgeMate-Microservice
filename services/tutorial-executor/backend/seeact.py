@@ -60,139 +60,6 @@ formatter = logging.Formatter('[%(levelname)s] %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-# # 添加操作类型枚举
-# class ActionType(Enum):
-#     CLICK = "click"
-#     TYPE = "type"
-#     HOVER = "hover"
-#     PRESS_ENTER = "press_enter"
-
-# @dataclass
-# class BrowserAction:
-#     action_type: ActionType
-#     selector: str
-#     value: str = ""
-    
-#     async def execute(self):
-#         """执行浏览器操作"""
-#         action_data = {
-#             "type": "CDP_COMMAND",
-#             "command": "Runtime.evaluate",
-#             "params": {
-#                 "expression": self._get_cdp_expression()
-#             }
-#         }
-#         await websocket_manager.broadcast_action(action_data)
-#         await asyncio.sleep(1)  # 等待操作完成
-    
-#     def _get_cdp_expression(self):
-#         """根据操作类型生成CDP表达式"""
-#         if self.action_type == ActionType.CLICK:
-#             return f"document.querySelector('{self.selector}').click()"
-#         elif self.action_type == ActionType.TYPE:
-#             return f"""
-#                 const el = document.querySelector('{self.selector}');
-#                 el.value = '{self.value}';
-#                 el.dispatchEvent(new Event('input'));
-#             """
-#         elif self.action_type == ActionType.HOVER:
-#             return f"""
-#                 const el = document.querySelector('{self.selector}');
-#                 el.dispatchEvent(new MouseEvent('mouseover'));
-#             """
-#         elif self.action_type == ActionType.PRESS_ENTER:
-#             return f"""
-#                 const el = document.querySelector('{self.selector}');
-#                 el.dispatchEvent(new KeyboardEvent('keypress', {{key: 'Enter'}}));
-#             """
-
-# async def execute_browser_action(action: BrowserAction):
-#     """通过 WebSocket 发送操作到扩展并等待执行完成"""
-#     action_data = {
-#         "type": action.action_type.value,
-#         "selector": action.selector,
-#         "value": action.value
-#     }
-#     await websocket_manager.broadcast_action(action_data)
-#     # TODO: 等待扩展确认操作完成
-#     await asyncio.sleep(1)  # 临时方案，后续改为等待确认
-
-async def get_page_elements():
-    """从扩展获取页面元素信息"""
-    # 发送获取元素请求
-    await websocket_manager.broadcast_action({"type": "get_elements"})
-    # TODO: 等待扩展返回元素信息
-    # 临时返回空列表，后续改为实际数据
-    return []
-
-async def take_screenshot(path: str, clip=None):
-    """获取页面截图"""
-    params = {}
-    if clip:
-        params['clip'] = clip
-    
-    result = await websocket_manager.broadcast_action({
-        "type": "CDP_COMMAND",
-        "command": "Page.captureScreenshot",
-        "params": params
-    })
-    
-    if result and result.get('data'):
-        import base64
-        with open(path, 'wb') as f:
-            f.write(base64.b64decode(result['data']))
-
-async def send_action(action_data):
-    """使用全局 WebSocket 管理器发送消息"""
-    await websocket_manager.broadcast_action(action_data)
-
-# @dataclass
-# class ExecutionConfig:
-#     auto_execute: bool = False
-
-# config_execution = ExecutionConfig()
-
-# def enable_auto_execute():
-#     config_execution.auto_execute = True
-#     logger_.info("已启用自动执行模式")
-
-# async def execute_specific_action(data):
-#     try:
-#         component_id = data.get("componentId")
-#         action = data.get("action")
-#         selector = f'[data-id="{component_id}"]'
-#         element = await session_control.active_page.query_selector(selector)
-#         if not element:
-#             logger_.error(f"未找到组件: {component_id}")
-#             return
-        
-#         if action == "点击按钮":
-#             await element.click()
-#             logger_.info(f"已点击组件: {component_id}")
-#         elif action == "填写表单":
-#             value = data.get("value", "")
-#             await element.fill(value)
-#             logger_.info(f"已填写组件: {component_id} 值: {value}")
-#         else:
-#             logger_.warning(f"未知的操作类型: {action}")
-#     except Exception as e:
-#         logger_.error(f"执行操作时出错: {e}")
-
-# async def perform_action(data):
-#     if config_execution.auto_execute:
-#         logger_.info("自动执行模式下执行操作")
-#         await execute_specific_action(data)
-#     else:
-#         logger_.info("等待用户指示以执行操作")
-
-# TODO: 跳过操作
-# async def skip_current_step():
-#     action = "当前操作已被跳过"
-#     taken_actions.append(action)
-#     logger_.info(action)
-#     if task_queue:
-#         task_queue.pop(0)
-
 @dataclass
 class SessionControl:
     pages = []
@@ -204,15 +71,6 @@ class SessionControl:
 
 
 session_control = SessionControl()
-
-
-# async def send_operation_to_extension(operation):
-#     try:
-#         await sio.emit('operation', operation)
-#         print("操作指令已发送:", operation)
-#     except Exception as e:
-#         print("发送操作指令失败:", e)
-
 
 async def page_on_close_handler(page):
     # print("Closed: ", page)
@@ -394,31 +252,23 @@ async def main(config, base_dir, query_: str, url_: str) -> None:
         logger.info(f"id: {task_id}")
         try:
             async with async_playwright() as playwright:
-                # 修改这里：不再创建新的浏览器实例，而是连接到用户的浏览器
-                try:
-                    # 连接到用户浏览器的调试端口
-                    browser = await playwright.chromium.connect_over_cdp("ws://localhost:9222")
-                    # 获取所有页面
-                    pages = browser.contexts[0].pages
-                    # 使用当前活动页面
-                    session_control.active_page = pages[0] if pages else await browser.contexts[0].new_page()
-                    
-                    if not pages:
-                        await session_control.active_page.goto(confirmed_website_url, wait_until="load")
-                except Exception as e:
-                    logger.error(f"连接到用户浏览器失败: {e}")
+                session_control.browser = await normal_launch_async(playwright)
+                if session_control.browser is None:
+                    logger_.error("浏览器实例不可用，终止执行")
                     return
-                
                 session_control.context = await normal_new_context_async(session_control.browser,
-                                                                         tracing=tracing,
-                                                                         storage_state=storage_state,
-                                                                         video_path=main_result_path if save_video else None,
-                                                                         viewport=viewport_size,
-                                                                         trace_screenshots=trace_screenshots,
-                                                                         trace_snapshots=trace_snapshots,
-                                                                         trace_sources=trace_sources,
-                                                                         geolocation=geolocation,
-                                                                         locale=locale)
+                                                                        tracing=tracing,
+                                                                        storage_state=storage_state,
+                                                                        video_path=main_result_path if save_video else None,
+                                                                        viewport=viewport_size,
+                                                                        trace_screenshots=trace_screenshots,
+                                                                        trace_snapshots=trace_snapshots,
+                                                                        trace_sources=trace_sources,
+                                                                        geolocation=geolocation,
+                                                                        locale=locale)
+                if session_control.context is None:
+                    logger_.error("浏览器上下文不可用，终止执行")
+                    return
                 session_control.context.on("page", page_on_open_handler)
                 await session_control.context.new_page()
                 try:
@@ -426,15 +276,15 @@ async def main(config, base_dir, query_: str, url_: str) -> None:
                 except Exception as e:
                     logger.info("Failed to fully load the webpage before timeout")
                     logger.info(e)
-                await asyncio.sleep(3)
-                # TODO: 不太可能放到这里
-                # 在此处根据SeeAct的逻辑识别组件并发送操作指令
-                operation = {
-                    "componentId": "component-1",  # 元素的唯一标识符
-                    "action": "点击按钮"
-                }
-                # await send_operation_to_extension(operation)
-
+                try:
+                    # 等待页面加载完成
+                    await session_control.active_page.wait_for_load_state('load', timeout=5000)
+                    # 如果需要，还可以等待网络请求完成
+                    await session_control.active_page.wait_for_load_state('networkidle', timeout=2000)
+                except Exception as e:
+                    # 如果等待超时，继续执行
+                    pass
+                
                 taken_actions = []
                 complete_flag = False
                 monitor_signal = ""
@@ -558,7 +408,8 @@ async def main(config, base_dir, query_: str, url_: str) -> None:
                     logger.info(f"batch size: {step_length}")
                     logger.info('-' * 10)
 
-                    total_width = session_control.active_page.viewport_size["width"]
+                    # total_width = session_control.active_page.viewport_size["width"]
+                    total_width = 1920
                     log_task = "You are asked to complete the following task: " + confirmed_task
                     logger.info(log_task)
                     previous_actions = taken_actions
@@ -627,11 +478,11 @@ async def main(config, base_dir, query_: str, url_: str) -> None:
                         # Format prompts for LLM inference
                         prompt = generate_prompt(task=confirmed_task, previous=taken_actions, choices=choices,
                                                  experiment_split="SeeAct")
-                        if dev_mode:
-                            for prompt_i in prompt:
-                                logger.info(prompt_i)
-                        logger.info(f"prompt: {prompt}")
-                        logger.info(f"input_image_path: {input_image_path}")
+                        # if dev_mode:
+                        #     for prompt_i in prompt:
+                        #         logger.info(prompt_i)
+                        # logger.info(f"prompt: {prompt}")
+                        # logger.info(f"input_image_path: {input_image_path}")
                         logger.info("into generate")
                         generate_start_time = time.time()
                         output0 = generation_model.generate(prompt=prompt, image_path=input_image_path, turn_number=0)
@@ -639,7 +490,7 @@ async def main(config, base_dir, query_: str, url_: str) -> None:
                         logger.info(f"generate_start_time: {generate_start_time}")
                         logger.info(f"generate_end_time: {generate_end_time}")
                         logger.info(f"generate_time: {generate_end_time - generate_start_time}")
-                        logger.info(f"out of generate, output0: {output0}")
+                        # logger.info(f"out of generate, output0: {output0}")
                         # print("output0: ", output0)
                         terminal_width = 10
                         logger.info("-" * terminal_width)
@@ -706,12 +557,39 @@ async def main(config, base_dir, query_: str, url_: str) -> None:
 
                     if got_one_answer:
                         # 发送操作指令
+                        # 准备发送给扩展的数据
                         action_data = {
-                            "componentId": target_element[2],
-                            "action": target_action,
-                            "value": target_value
+                            "type": "operation",  # 用于区分消息类型
+                            "componentId": target_element[2],  # 元素的唯一标识符
+                            "action": target_action,  # 操作类型（CLICK, TYPE等）
+                            "value": target_value,  # 如果是TYPE操作，需要输入的值
+                            "position": {  # 元素的位置信息
+                                "x": target_element[0][0],  # 中心点x坐标
+                                "y": target_element[0][1],  # 中心点y坐标
+                                "box": target_element[3]  # 边界框 [x1, y1, x2, y2]
+                            }
                         }
-                        await send_action(action_data)
+                        
+                        # 发送操作数据到WebSocket
+                        try:
+                            await websocket_manager.send_message(json.dumps(action_data))
+                            
+                            # 等待用户通过扩展界面的响应
+                            response = await websocket_manager.wait_for_response()
+                            
+                            if response.get("type") == "EXIT_ACTION":
+                                # 用户选择退出
+                                raise Exception("User manually terminated the operation")
+                            elif response.get("type") in ["AUTO_EXECUTE", "CONTINUOUS_AUTO_EXECUTE"]:
+                                # 用户选择自动执行
+                                valid_op_count += 1
+                                # 继续执行原有的操作代码...
+                            
+                        except Exception as e:
+                            logger.error(f"Failed to communicate with extension: {e}")
+                            # 可以选择继续执行或终止
+                            pass
+                        # await send_action(action_data)
                         terminal_width = 10  # What's this?
                         logger.info("-" * terminal_width)
                         logger.info("🤖Browser Operation🤖")
@@ -997,7 +875,14 @@ async def main(config, base_dir, query_: str, url_: str) -> None:
                         if monitor_signal == 'pause':
                             pass
                         else:
-                            await asyncio.sleep(3)
+                            try:
+                                # 等待页面加载完成
+                                await session_control.active_page.wait_for_load_state('load', timeout=5000)
+                                # 如果需要，还可以等待网络请求完成
+                                await session_control.active_page.wait_for_load_state('networkidle', timeout=2000)
+                            except Exception as e:
+                                # 如果等待超时，继续执行
+                                pass
                         if dev_mode:
                             logger.info(f"current active page: {session_control.active_page}")
 
@@ -1103,4 +988,4 @@ if __name__ == "__main__":
     except toml.TomlDecodeError:
         print(f"Error: File '{args.config_path}' is not a valid TOML file.")
 
-    asyncio.run(main(config, base_dir))
+    asyncio.run(main(config, base_dir, query_="我想在淘宝买一件羽绒服", url_="https://www.taobao.com"))

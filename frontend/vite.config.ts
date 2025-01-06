@@ -17,7 +17,11 @@ export default defineConfig({
     },
   },
   server: {
-    host: '0.0.0.0', // 确保在 Docker 中可以访问
-    port: 5173,      // 设置监听的端口
+    host: '0.0.0.0',
+    port: 5173,
+    strictPort: true,
+    watch: {
+      usePolling: true
+    }
   }
 })

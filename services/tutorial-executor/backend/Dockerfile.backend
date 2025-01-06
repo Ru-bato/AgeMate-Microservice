@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     curl \
     wget \
+    iputils-ping\
     # 安装 Playwright 所需的系统依赖
     libnss3 \
     libxss1 \
@@ -82,5 +83,4 @@ ENV ENVIRONMENT=development
 EXPOSE 8003
 
 # 启动命令
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003", "--reload", "--log-level", "debug"]
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003", "--reload", "--log-level", "debug"]

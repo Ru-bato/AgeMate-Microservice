@@ -145,8 +145,12 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - RABBITMQ_URL=${RABBITMQ_URL}
       - MONGODB_URL=mongodb://root:age123456@tutorial-executor-mongodb:27017/tutorial_executor?authSource=admin
+      - CHROME_DEBUG_HOST=host.docker.internal
+      - CHROME_DEBUG_PORT=9222
     networks:
       - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - rabbitmq
       - tutorial-executor-mongodb

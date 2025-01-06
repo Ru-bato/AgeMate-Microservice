@@ -1,0 +1,356 @@
+services:
+  # API Gateway: Traefik
+  traefik:
+    image: muyongzhen/agetutor:traefik-latest # v2.1.0
+    container_name: traefik
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--log.level=DEBUG"
+      # - "--entrypoints.websecure.address=:443"
+      # - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+      # - "--certificatesresolvers.myresolver.acme.email=myemail@example.com"
+      # - "--certificatesresolvers.myresolver.acme.storage=/etc/traefik/acme.json"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      # - ./traefik/acme.json:/etc/traefik/acme.json
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      app-network:
+        ipv4_address: 192.168.10.2
+    labels:
+      - "traefik.enable=true"
+    restart: always
+    # environment:
+    #   - http_proxy=http://host.docker.internal:7890
+    #   - https_proxy=http://host.docker.internal:7890
+    #   - no_proxy=localhost,127.0.0.1,*.local,*.docker
+
+  # 中间件：RabbitMQ
+  rabbitmq:
+    image: muyongzhen/agetutor:rabbitmq-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # RabbitMQ 管理控制台
+    networks:
+      app-network:
+        ipv4_address: 192.168.10.3
+    restart: always
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  # 日志监控：Prometheus
+  prometheus:
+    image: muyongzhen/agetutor:prometheus-latest
+    container_name: prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      app-network:
+        ipv4_address: 192.168.10.4
+    restart: always
+
+  # 日志监控：Grafana
+  grafana:
+    image: muyongzhen/agetutor:grafana-latest
+    container_name: grafana
+    volumes:
+      - ./monitoring/grafana:/var/lib/grafana
+      - ./monitoring/grafana.ini:/etc/grafana/grafana.ini:ro
+    ports:
+      - "3000:3000"
+    networks:
+      app-network:
+        ipv4_address: 192.168.10.5
+    restart: always
+
+  # 前端服务
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.frontend
+    image: muyongzhen/agetutor:frontend-latest
+    environment:
+      - VITE_HOST=0.0.0.0
+    command: npm run dev -- --host 0.0.0.0
+    depends_on:
+      - traefik
+    networks:
+      app-network:
+        ipv4_address: 192.168.10.10
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`localhost`) && Path(`/`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+    ports:
+      - "5173:5173"
+    restart: always
+
+  # 微服务guidebook-generator 后端
+  guidebook-generator-backend:
+    build:
+      context: ./services/guidebook-generator/backend
+      dockerfile: Dockerfile.backend
+    image: muyongzhen/agetutor:guidebook-generator-backend-latest
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+    networks:
+      app-network:
+        ipv4_address: 192.168.10.11
+    depends_on:
+      - rabbitmq
+      - guidebook-generator-mongodb
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://guidebook-generator-backend:8001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.guidebook-generator-backend.rule=PathPrefix(`/guidebook-generator`)"
+      - "traefik.http.services.guidebook-generator-backend.loadbalancer.server.port=8001"
+    restart: on-failure
+
+  # 微服务log-manager 后端
+  log-manager-backend:
+    build:
+      context: ./services/log-manager/backend
+      dockerfile: Dockerfile.backend
+    image: muyongzhen/agetutor:log-manager-backend-latest
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+    networks:
+      app-network:
+        ipv4_address: 192.168.10.12
+    depends_on:
+      - rabbitmq
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://log-manager-backend:8002/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.log-manager-backend.rule=PathPrefix(`/log-manager`)"
+      - "traefik.http.services.log-manager-backend.loadbalancer.server.port=8002"
+    restart: on-failure
+
+  # 微服务tutorial-executor 后端
+  tutorial-executor-backend:
+    build:
+      context: ./services/tutorial-executor/backend
+      dockerfile: Dockerfile.backend
+    image: muyongzhen/agetutor:tutorial-executor-backend-latest
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - MONGODB_URL=mongodb://root:age123456@tutorial-executor-mongodb:27017/tutorial_executor?authSource=admin
+    networks:
+      app-network:
+        ipv4_address: 192.168.10.13
+    depends_on:
+      - rabbitmq
+      - tutorial-executor-mongodb
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://tutorial-executor-backend:8003/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tutorial-executor-backend.rule=PathPrefix(`/tutorial-executor`)"
+      - "traefik.http.services.tutorial-executor-backend.loadbalancer.server.port=8003"
+      - "traefik.http.middlewares.tutorial-executor-stripprefix.stripprefix.prefixes=/tutorial-executor"
+      - "traefik.http.routers.tutorial-executor-ws.rule=PathPrefix(`/tutorial-executor/ws`)"
+      - "traefik.http.routers.tutorial-executor-ws.entrypoints=web"
+      - "traefik.http.routers.tutorial-executor-ws.service=tutorial-executor-backend"
+    restart: on-failure
+
+  # 微服务tutorial-generator 后端
+  tutorial-generator-backend:
+    build:
+      context: ./services/tutorial-generator/backend
+      dockerfile: Dockerfile.backend
+    image: muyongzhen/agetutor:tutorial-generator-backend-latest
+    ports:
+      - "8003:8003"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - MONGODB_URL=mongodb://root:age123456@tutorial-generator-mongodb:27017/tutorial_generator?authSource=admin
+      - WEBSOCKET_URI=ws://localhost:8003/ws
+    networks:
+      app-network:
+        ipv4_address: 192.168.10.14
+    depends_on:
+      - rabbitmq
+      - tutorial-generator-mongodb
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://tutorial-generator-backend:8004/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tutorial-generator-backend.rule=PathPrefix(`/tutorial-generator`)"
+      - "traefik.http.services.tutorial-generator-backend.loadbalancer.server.port=8004"
+    restart: on-failure
+
+  # 微服务user-manager 后端
+  user-manager-backend:
+    build:
+      context: ./services/user-manager/backend
+      dockerfile: Dockerfile.backend
+    image: muyongzhen/agetutor:user-manager-backend-latest
+    # expictly set the port
+    ports:
+      - "8005:8005"
+    environment:
+      - DATABASE_URL=${USER_MANAGER_MYSQL_URL}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+    networks:
+      app-network:
+        ipv4_address: 192.168.10.15
+    depends_on:
+      - rabbitmq
+      - user-manager-mysql
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://user-manager-backend:8005/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.user-manager-backend.rule=PathPrefix(`/user-manager`)"
+      - "traefik.http.services.user-manager-backend.loadbalancer.server.port=8005"
+    restart: on-failure
+
+  # 微服务user-manager MySQL数据库
+  user-manager-mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: age123456
+      MYSQL_DATABASE: user_manager_mysql
+    volumes:
+      - user_manager_mysql_data:/var/lib/mysql
+    networks:
+      app-network:
+        ipv4_address: 192.168.10.20
+    restart: always
+
+  # 微服务weather-entertainment 后端
+  weather-entertainment-backend:
+    build:
+      context: ./services/weather-entertainment/backend
+      dockerfile: Dockerfile.backend
+    image: muyongzhen/agetutor:weather-entertainment-backend-latest
+    # expictly set the port
+    ports:
+      - "8006:8006"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+    networks:
+      app-network:
+        ipv4_address: 192.168.10.16
+    depends_on:
+      - rabbitmq
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://weather-entertainment-backend:8006/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.weather-entertainment-backend.rule=PathPrefix(`/weather-entertainment`)"
+      - "traefik.http.services.weather-entertainment-backend.loadbalancer.server.port=8006"
+    restart: on-failure
+
+  # 微服务tutorial-generator MongoDB数据库
+  tutorial-generator-mongodb:
+    image: mongo:latest
+    container_name: tutorial-generator-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: age123456
+      MONGO_INITDB_DATABASE: tutorial_generator
+    volumes:
+      - tutorial_generator_mongodb_data:/data/db
+    networks:
+      app-network:
+        ipv4_address: 192.168.10.21
+    restart: always
+
+  # 微服务tutorial-executor MongoDB数据库
+  tutorial-executor-mongodb:
+    image: mongo:latest
+    container_name: tutorial-executor-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: age123456
+      MONGO_INITDB_DATABASE: tutorial_executor
+    volumes:
+      - tutorial_executor_mongodb_data:/data/db
+    networks:
+      app-network:
+        ipv4_address: 192.168.10.22
+    restart: always
+
+  # 微服务Guidebook Generator MongoDB数据库
+  guidebook-generator-mongodb:
+    image: mongo:latest
+    container_name: guidebook-generator-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: age123456
+      MONGO_INITDB_DATABASE: guidebook_generator
+    volumes:
+      - guidebook_generator_mongodb_data:/data/db
+    networks:
+      app-network:
+        ipv4_address: 192.168.10.23
+    restart: always
+
+networks:
+  app-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.10.0/24
+          gateway: 192.168.10.1
+
+volumes:
+  rabbitmq_data:
+    driver: local
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   device: /data/rabbitmq_data
+  prometheus_data:
+    driver: local
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   device: /data/prometheus_data
+  user_manager_mysql_data:
+    driver: local
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   device: /data/mysql_data
+  tutorial_generator_mongodb_data:
+    driver: local
+  tutorial_executor_mongodb_data:
+    driver: local
+  guidebook_generator_mongodb_data:
+    driver: local

@@ -125,31 +125,48 @@ ignore_args = [
 
 
 
-async def normal_launch_async(playwright: Playwright,trace_dir=None):
-    browser = await playwright.chromium.launch(
-        traces_dir=None,
-        headless=False,
-        args=[
-            "--disable-blink-features=AutomationControlled",
-        ],
-        # headless=True
-        # ignore_default_args=ignore_args,
-        # chromium_sandbox=False,
-    )
+# async def normal_launch_async(playwright: Playwright,trace_dir=None):
+#     browser = await playwright.chromium.launch(
+#         traces_dir=None,
+#         headless=False,
+#         args=[
+#             "--disable-blink-features=AutomationControlled",
+#         ],
+#         # headless=True
+#         # ignore_default_args=ignore_args,
+#         # chromium_sandbox=False,
+#     )
+#     return browser
+
+async def normal_launch_async(playwright: Playwright, trace_dir=None):
+    # 不再新启动浏览器，而是连接到现有的Chrome实例
+    try:
+        browser = await playwright.chromium.connect_over_cdp("http://192.168.65.254:9222")
+        # logger_.info(f"成功连接到现有的Chrome实例: {browser}")
+    except Exception as e:
+        # logger_.error(f"通过CDP连接到Chrome失败: {e}")
+        # 如果连接失败，可以选择启动一个新的浏览器实例
+        # browser = await playwright.chromium.launch(
+        #     headless=False,
+        #     args=[
+        #         "--disable-blink-features=AutomationControlled",
+        #     ],
+        # )
+        # logger_.info("已启动一个新的浏览器实例")
+        pass
     return browser
 
 
-def normal_launch(playwright: Playwright):
-    browser = playwright.chromium.launch(
-        headless=False,
-        args=['--incognito',
-              "--disable-blink-features=AutomationControlled",
-              ],
-        ignore_default_args=ignore_args,
-        # headless=True
-    )
-    return browser
-
+# def normal_launch(playwright: Playwright):
+#     browser = playwright.chromium.launch(
+#         headless=False,
+#         args=['--incognito',
+#               "--disable-blink-features=AutomationControlled",
+#               ],
+#         ignore_default_args=ignore_args,
+#         # headless=True
+#     )
+#     return browser
 
 async def normal_new_context_async(
         browser,
@@ -165,20 +182,64 @@ async def normal_new_context_async(
         user_agent: str = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
         viewport: dict = {"width": 1280, "height": 720},
 ):
-    city = random.choice(list_us_cities)
-    context = await browser.new_context(
-        storage_state=storage_state,
-        user_agent=user_agent,
-        viewport=viewport,
-        locale=locale,
-        record_har_path=har_path,
-        record_video_dir=video_path,
-        geolocation=geolocation,
-    )
+    if not browser:
+        return None
+    try:
+         # 获取已有的上下文，如果存在的话
+        contexts = browser.contexts
+        if contexts:
+            # 使用第一个已存在的上下文
+            context = contexts[0]
+        else:
+            # 如果没有上下文，创建新的
+            context = await browser.new_context(
+                storage_state=storage_state,
+                user_agent=user_agent,
+                viewport=viewport,
+                locale=locale,
+                record_har_path=har_path,
+                record_video_dir=video_path,
+                geolocation=geolocation,
+            )
 
-    if tracing:
-        await context.tracing.start(screenshots=trace_screenshots, snapshots=trace_snapshots, sources=trace_sources)
-    return context
+        if tracing:
+            await context.tracing.start(screenshots=trace_screenshots, snapshots=trace_snapshots, sources=trace_sources)
+        return context
+        # logger_.info("已创建新的浏览器上下文")
+    except Exception as e:
+        # logger_.error(f"创建或获取浏览器上下文失败: {e}")
+        pass
+        return None
+
+
+# async def normal_new_context_async(
+#         browser,
+#         storage_state=None,
+#         har_path=None,
+#         video_path=None,
+#         tracing=False,
+#         trace_screenshots=False,
+#         trace_snapshots=False,
+#         trace_sources=False,
+#         locale=None,
+#         geolocation=None,
+#         user_agent: str = "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
+#         viewport: dict = {"width": 1280, "height": 720},
+# ):
+#     city = random.choice(list_us_cities)
+#     context = await browser.new_context(
+#         storage_state=storage_state,
+#         user_agent=user_agent,
+#         viewport=viewport,
+#         locale=locale,
+#         record_har_path=har_path,
+#         record_video_dir=video_path,
+#         geolocation=geolocation,
+#     )
+
+#     if tracing:
+#         await context.tracing.start(screenshots=trace_screenshots, snapshots=trace_snapshots, sources=trace_sources)
+#     return context
 
 
 def normal_new_context(
@@ -255,28 +316,28 @@ def connect_via_cdp(playwright: Playwright, user_data_dir: str = ""):
     return browser
 
 
-async def connect_via_cdp_async(playwright: Playwright, user_data_dir: str = ""):
-    chrome_process = subprocess.Popen(
-        [
-            "/pw-browsers/chromium-1041/chrome-linux/chrome",
-            # "--disable-dev-shm-usage",
-            # "--no-startup-window",
-            "--remote-debugging-port=0",
-            f"--user-data-dir={user_data_dir}",
-            "--disable-blink-features=AutomationControlled",
-        ],
-        stderr=subprocess.STDOUT,
-        stdout=subprocess.PIPE,
-    )
-    for line in iter(chrome_process.stdout.readline, b""):
-        if b"DevTools listening on" in line:
-            cdp_address = line.split()[-1].decode("utf-8")
-            break
-    # cdp_address = (
-    #     "ws://127.0.0.1:9876/devtools/browser/a175e70e-2b36-4b80-ba44-2be98b1d8f3f"
-    # )
-    browser = await playwright.chromium.connect_over_cdp(endpoint_url=cdp_address)
-    return browser, chrome_process
+# async def connect_via_cdp_async(playwright: Playwright, user_data_dir: str = ""):
+#     chrome_process = subprocess.Popen(
+#         [
+#             "/pw-browsers/chromium-1041/chrome-linux/chrome",
+#             # "--disable-dev-shm-usage",
+#             # "--no-startup-window",
+#             "--remote-debugging-port=0",
+#             f"--user-data-dir={user_data_dir}",
+#             "--disable-blink-features=AutomationControlled",
+#         ],
+#         stderr=subprocess.STDOUT,
+#         stdout=subprocess.PIPE,
+#     )
+#     for line in iter(chrome_process.stdout.readline, b""):
+#         if b"DevTools listening on" in line:
+#             cdp_address = line.split()[-1].decode("utf-8")
+#             break
+#     # cdp_address = (
+#     #     "ws://127.0.0.1:9876/devtools/browser/a175e70e-2b36-4b80-ba44-2be98b1d8f3f"
+#     # )
+#     browser = await playwright.chromium.connect_over_cdp(endpoint_url=cdp_address)
+#     return browser, chrome_process
 
 
 def remove_extra_eol(text):
@@ -499,7 +560,7 @@ async def select_option(selector, value):
     await selector.select_option(index=best_option[0], timeout=10000)
     return remove_extra_eol(best_option[1]).strip()
 
-
+# TODO: Here is save config
 def saveconfig(config, save_file):
     """
     config is a dictionary.

@@ -1,5 +1,7 @@
 from fastapi import WebSocket
 import logging
+import asyncio
+import json
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -28,6 +30,29 @@ class ConnectionManager:
         # 清理失效连接        
         for conn in dead_connections:
             self.active_connections.remove(conn)
+
+class WebSocketManager:
+    def __init__(self):
+        self.websocket = None
+        self.response_future = None
+        
+    async def send_message(self, message):
+        if self.websocket:
+            await self.websocket.send(message)
+            
+    async def wait_for_response(self, timeout=30):
+        """等待来自扩展的响应"""
+        if not self.websocket:
+            raise Exception("WebSocket connection not available")
+            
+        try:
+            response = await asyncio.wait_for(
+                self.websocket.recv(),
+                timeout=timeout
+            )
+            return json.loads(response)
+        except asyncio.TimeoutError:
+            raise Exception("Timeout waiting for extension response")
 
 # 创建全局实例
 websocket_manager = ConnectionManager()

@@ -78,6 +78,7 @@ class Worker(QObject):
                 '--remote-allow-origins=*',
                 '--no-first-run',
                 '--no-default-browser-check',
+                '--disable-features=SharedWorker',
                 f'--user-data-dir={user_data_dir}'
             ]
             logger.info(f"执行命令: {' '.join(cmd)}")
@@ -193,11 +194,6 @@ class ChromeDebugLauncher(QMainWindow):
         self.worker = Worker()
         self.worker_thread = QThread()
         self.setup_worker()
-        
-        # 移除原有的check_timer
-        # self.check_timer = QTimer()
-        # self.check_timer.timeout.connect(self.check_debug_status)
-        # self.check_timer.start(5000)
 
     def setup_worker(self):
         """设置工作线程"""
