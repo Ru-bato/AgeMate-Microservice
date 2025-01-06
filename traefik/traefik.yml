@@ -1,0 +1,17 @@
+# traefik.yml
+
+# 入口点
+entryPoints:
+  web:
+    address: ":80"
+  websecure:
+    address: ":443"
+
+# Docker Provider 配置
+providers:
+  docker:
+    exposedByDefault: false
+
+# 日志配置
+log:
+  level: DEBUG

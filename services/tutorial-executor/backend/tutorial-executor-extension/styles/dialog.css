@@ -1,0 +1,119 @@
+/* styles/dialog.css */
+
+.seeact-operation-dialog {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    border: 2px solid #333;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    min-width: 300px;
+}
+
+.seeact-operation-dialog p {
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    line-height: 1.5;
+    color: #333;
+}
+
+.seeact-operation-dialog button {
+    margin-right: 15px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.seeact-operation-dialog .btn-exit {
+    background-color: #ff6b6b;
+    color: white;
+}
+
+.seeact-operation-dialog .btn-auto {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.seeact-operation-dialog .btn-continuous {
+    background-color: #2196F3;
+    color: white;
+}
+
+.seeact-operation-dialog button:hover {
+    transform: scale(1.05);
+}
+
+.seeact-tooltip {
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    color: #856404;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    max-width: 300px;
+    z-index: 10001;
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.seeact-loader-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(255, 255, 255, 0.95);
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    z-index: 10000;
+    animation: fadeIn 0.3s ease-in;
+}
+
+.seeact-spinner {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 20px;
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #4CAF50;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.seeact-loading-text {
+    font-size: 20px;
+    color: #333;
+    font-weight: bold;
+    margin-top: 15px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
